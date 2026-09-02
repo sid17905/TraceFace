@@ -1,0 +1,32 @@
+# --- Computer Vision & Biometric Deep Learning (Member 1) ---
+insightface>=0.7.3
+onnxruntime>=1.17.0
+opencv-python>=4.9.0
+numpy>=1.26.0
+pillow>=10.2.0
+imagehash>=4.3.1
+
+# --- OSINT & Web Scrapers (Member 2) ---
+google-search-results>=2.4.2
+playwright>=1.42.0
+beautifulsoup4>=4.12.3
+httpx>=0.27.0
+requests>=2.31.0
+
+# --- Cryptography, IPFS & Web3 (Member 3) ---
+web3>=6.15.0
+eth-account>=0.11.0
+pycryptodome>=3.20.0
+canonicaljson>=2.0.0
+
+# --- CLI & Terminal User Experience (Joint) ---
+typer[all]>=0.9.0
+rich>=13.7.0
+pydantic>=2.6.0
+python-dotenv>=1.0.1
+
+# --- Testing & Code Quality ---
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+black>=24.2.0
+ruff>=0.2.2
