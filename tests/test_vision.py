@@ -79,9 +79,29 @@ def test_matcher():
 
     sim = compute_cosine_similarity(vec1, vec2)
     assert np.isclose(sim, 1.0)
-    assert is_authentic_match(sim)
+    is_match = is_authentic_match(sim, threshold=0.68)
+    assert is_match
 
     vec3 = -vec1
     sim2 = compute_cosine_similarity(vec1, vec3)
-    assert sim2 < 0.68
-    assert not is_authentic_match(sim2)
+    is_match2 = is_authentic_match(sim2, threshold=0.68)
+    # The dummy vectors are completely different, should be low similarity
+    assert sim2 < 0.45
+    assert not is_match2
+
+
+def test_liveness():
+    import numpy as np
+
+    from src.vision.liveness import FrequencyForensics
+
+    analyzer = FrequencyForensics()
+    # Test with empty image
+    is_deepfake, score = analyzer.analyze_liveness(np.array([]))
+    assert not is_deepfake
+
+    # Test with random noise image (should have flat spectrum, might trigger deepfake depending on threshold, but let's just make sure it runs)
+    dummy_img = np.random.randint(0, 255, (256, 256, 3), dtype=np.uint8)
+    is_deepfake, score = analyzer.analyze_liveness(dummy_img)
+    assert isinstance(is_deepfake, bool)
+    assert isinstance(score, float)
