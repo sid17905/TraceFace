@@ -5,6 +5,12 @@ from Crypto.Hash import SHA256, keccak
 import imagehash
 from PIL import Image
 from typing import Dict, List, Optional
+import warnings
+import sys
+import os
+
+# Suppress insightface third-party FutureWarnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="insightface.utils.face_align")
 
 class FaceEmbedder:
     """
@@ -12,7 +18,19 @@ class FaceEmbedder:
     """
     def __init__(self, model_name: str = 'buffalo_l', ctx_id: int = 0):
         # We instantiate with detection and recognition to satisfy FaceAnalysis assertions
-        self.app = insightface.app.FaceAnalysis(name=model_name, allowed_modules=['detection', 'recognition'])
+        # Suppress insightface hardcoded print statements
+        original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+        try:
+            self.app = insightface.app.FaceAnalysis(
+                name=model_name, 
+                allowed_modules=['detection', 'recognition'],
+                providers=['CPUExecutionProvider']
+            )
+        finally:
+            sys.stdout.close()
+            sys.stdout = original_stdout
+            
         self.app.prepare(ctx_id=ctx_id, det_size=(640, 640))
         self.recognition_model = self.app.models['recognition']
         
@@ -26,16 +44,20 @@ class FaceEmbedder:
                 self.bbox = np.array(b)
                 self.kps = np.array(k)
                 self.embedding = None
-                self.normed_embedding = None
                 
         face = MockFace(bbox, landmarks)
         # The recognition model modifies the face object in place to add the embedding
         self.recognition_model.get(image, face)
         
-        if face.normed_embedding is None:
+        if not hasattr(face, 'embedding') or face.embedding is None:
             raise ValueError("Failed to generate embedding")
             
-        return face.normed_embedding
+        emb = face.embedding
+        norm = np.linalg.norm(emb)
+        if norm != 0:
+            emb = emb / norm
+            
+        return emb
 
     def compute_hashes(self, embedding: np.ndarray, image: np.ndarray) -> Dict[str, str]:
         """
