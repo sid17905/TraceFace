@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "traceface"
+version = "1.0.0"
+description = "Biometric OSINT & Blockchain Provenance Pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra -q"
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::FutureWarning:insightface.*",
+]
+
+[tool.mypy]
+ignore_missing_imports = true

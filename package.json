@@ -1,0 +1,21 @@
+{
+  "name": "traceface-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts and deployment scripts for TraceFace",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run contracts/scripts/deploy.js --network localhost",
+    "deploy:polygon": "hardhat run contracts/scripts/deploy.js --network polygonAmoy",
+    "deploy:arbitrum": "hardhat run contracts/scripts/deploy.js --network arbitrumSepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.1",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.11.1",
+    "hardhat": "^2.20.1"
+  }
+}

@@ -130,5 +130,5 @@ class BatchEvaluator:
                 )
 
         # Sort by best similarity
-        results.sort(key=lambda x: float(x.get("similarity", 0.0)), reverse=True)
+        results.sort(key=lambda x: float(x.get("similarity", 0.0)), reverse=True)  # type: ignore
         return results
