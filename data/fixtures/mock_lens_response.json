@@ -1,0 +1,49 @@
+{
+  "search_metadata": {
+    "id": "mock-lens-0001",
+    "status": "Success",
+    "engine": "google_lens"
+  },
+  "search_parameters": {
+    "engine": "google_lens",
+    "url": "https://cdn.example.com/query/face-crop.jpg"
+  },
+  "visual_matches": [
+    {
+      "position": 1,
+      "title": "Suspect photographed at downtown rally - Local Herald",
+      "link": "https://news.example.com/story/12345",
+      "source": "news.example.com",
+      "thumbnail": "https://serpapi-thumbnails.example/1.jpg",
+      "image": "https://news.example.com/img/full1.jpg"
+    },
+    {
+      "position": 2,
+      "title": "Jane Doe (@janedoe) on X",
+      "link": "https://twitter.com/janedoe/status/1699999999999999999",
+      "source": "twitter.com",
+      "thumbnail": "https://serpapi-thumbnails.example/2.jpg",
+      "image": { "link": "https://pbs.twimg.com/media/full2.jpg" }
+    },
+    {
+      "position": 3,
+      "title": "Instagram post",
+      "link": "https://www.instagram.com/p/AbCdEfGhIjK/",
+      "source": "instagram.com",
+      "thumbnail": "https://serpapi-thumbnails.example/3.jpg"
+    },
+    {
+      "position": 4,
+      "title": "Blog mirror of the photo",
+      "link": "https://blog.example.org/post/hello",
+      "source": "blog.example.org",
+      "thumbnail": "https://serpapi-thumbnails.example/4.jpg"
+    },
+    {
+      "position": 5,
+      "title": "Malformed entry with no link",
+      "link": "",
+      "source": "bad.example"
+    }
+  ]
+}
