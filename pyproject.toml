@@ -15,3 +15,9 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra -q"
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::FutureWarning:insightface.*",
+]
+
+[tool.mypy]
+ignore_missing_imports = true

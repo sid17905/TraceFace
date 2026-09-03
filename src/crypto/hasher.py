@@ -1,7 +1,7 @@
 import hashlib
 import struct
 from pathlib import Path
-from typing import Any, List, Union
+
 from Crypto.Hash import keccak
 
 
@@ -9,7 +9,7 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def sha256_file(file_path: Union[str, Path]) -> str:
+def sha256_file(file_path: str | Path) -> str:
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
@@ -27,12 +27,12 @@ def keccak256_bytes(data: bytes) -> str:
 
 
 def keccak256_hex(hex_str: str) -> str:
-    clean_hex = hex_str[2:] if hex_str.startswith("0x") else hex_str
+    clean_hex = hex_str.removeprefix("0x")
     raw_bytes = bytes.fromhex(clean_hex)
     return keccak256_bytes(raw_bytes)
 
 
-def hash_face_embedding(vector: List[float]) -> str:
+def hash_face_embedding(vector: list[float]) -> str:
     # Deterministic IEEE 754 float32 big-endian byte serialization
     packed = struct.pack(f">{len(vector)}f", *vector)
     return keccak256_bytes(packed)

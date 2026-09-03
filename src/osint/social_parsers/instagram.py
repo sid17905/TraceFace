@@ -9,7 +9,6 @@ specialized for Instagram's title conventions.
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 from ..models import SocialPost
 from . import generic_web
@@ -23,7 +22,7 @@ def parse_instagram_html(page_html: str, url: str) -> SocialPost:
 
     post = generic_web.parse_open_graph(page_html, url, platform="instagram")
 
-    title = post.author_display_name or ""
+    title = post.author_display_name or ""  # noqa: F841
     # generic_web put the article/site author in author fields; Instagram encodes
     # the real author inside og:title, so re-derive from the raw OG map.
     og = generic_web.extract_open_graph(page_html)
@@ -42,7 +41,7 @@ def parse_instagram_html(page_html: str, url: str) -> SocialPost:
     return post
 
 
-def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
+def fetch(url: str, timeout: float = 15.0) -> SocialPost | None:
     """Fetch a public Instagram post and parse its OpenGraph metadata."""
 
     try:
@@ -56,9 +55,9 @@ def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
             headers={"User-Agent": "Mozilla/5.0 (compatible; TraceFaceBot/1.0)"},
         )
         resp.raise_for_status()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
     return parse_instagram_html(resp.text, url)
 
 
-__all__ = ["parse_instagram_html", "fetch"]
+__all__ = ["fetch", "parse_instagram_html"]

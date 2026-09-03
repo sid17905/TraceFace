@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
-from src.crypto.hasher import keccak256_bytes, keccak256_hex
+
+from src.crypto.hasher import keccak256_bytes
 
 
 @dataclass
@@ -13,7 +13,7 @@ class ProvenanceMerkleResult:
     intermediate_right: str
     merkle_root: str
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         return {
             "leaf_source_image": self.leaf_source_image,
             "leaf_face_embedding": self.leaf_face_embedding,
@@ -26,8 +26,8 @@ class ProvenanceMerkleResult:
 
 
 def _combine_nodes(left_hex: str, right_hex: str) -> str:
-    l_bytes = bytes.fromhex(left_hex[2:] if left_hex.startswith("0x") else left_hex)
-    r_bytes = bytes.fromhex(right_hex[2:] if right_hex.startswith("0x") else right_hex)
+    l_bytes = bytes.fromhex(left_hex.removeprefix("0x"))
+    r_bytes = bytes.fromhex(right_hex.removeprefix("0x"))
     return keccak256_bytes(l_bytes + r_bytes)
 
 

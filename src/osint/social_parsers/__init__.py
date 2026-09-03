@@ -8,7 +8,8 @@ in the per-platform modules and are used directly by the unit tests.
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional  # noqa: F401
 
 from ..models import SocialPost
 from . import generic_web, instagram, reddit, twitter
@@ -33,7 +34,7 @@ def detect_platform(url: str) -> str:
 
 
 # platform key → fetch(url, timeout) -> Optional[SocialPost]
-_FETCHERS: dict[str, Callable[..., Optional[SocialPost]]] = {
+_FETCHERS: dict[str, Callable[..., SocialPost | None]] = {
     "twitter": twitter.fetch,
     "reddit": reddit.fetch,
     "instagram": instagram.fetch,
@@ -42,11 +43,11 @@ _FETCHERS: dict[str, Callable[..., Optional[SocialPost]]] = {
 }
 
 
-def get_fetcher(platform: str) -> Callable[..., Optional[SocialPost]]:
+def get_fetcher(platform: str) -> Callable[..., SocialPost | None]:
     return _FETCHERS.get(platform, generic_web.fetch)
 
 
-def parse_post(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
+def parse_post(url: str, timeout: float = 15.0) -> SocialPost | None:
     """Fetch and parse a post from any supported platform (best-effort)."""
 
     return get_fetcher(detect_platform(url))(url, timeout=timeout)
@@ -54,10 +55,10 @@ def parse_post(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
 
 __all__ = [
     "detect_platform",
-    "get_fetcher",
-    "parse_post",
-    "twitter",
-    "reddit",
-    "instagram",
     "generic_web",
+    "get_fetcher",
+    "instagram",
+    "parse_post",
+    "reddit",
+    "twitter",
 ]

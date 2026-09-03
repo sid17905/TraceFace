@@ -20,11 +20,14 @@ query embedding is supplied the dispatcher runs in *discovery-only* mode
 from __future__ import annotations
 
 import logging
-import os
 import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Sequence
+from typing import Any
 
+from src.config import settings
+
+from . import social_parsers
 from .lens_search import BingVisualSearch, LensSearchEngine
 from .media_downloader import MediaDownloader
 from .models import (
@@ -39,7 +42,6 @@ from .models import (
     VerifiedMatch,
 )
 from .playwright_scraper import PlaywrightScraper
-from . import social_parsers
 
 logger = logging.getLogger("traceface.osint")
 
@@ -54,14 +56,14 @@ class OSINTQuery:
     """Input to a single OSINT search run."""
 
     query_scan_id: str
-    image_url: Optional[str] = None            # public URL for API engines
-    image_path: Optional[str] = None           # local file for Playwright fallback
-    query_embedding: Optional[Sequence[float]] = None  # Member 1 ArcFace vector
+    image_url: str | None = None            # public URL for API engines
+    image_path: str | None = None           # local file for Playwright fallback
+    query_embedding: Sequence[float] | None = None  # Member 1 ArcFace vector
     max_candidates: int = 10
-    similarity_threshold: Optional[float] = None
+    similarity_threshold: float | None = None
 
 
-def _as_matcher_fn(matcher: Any) -> Optional[MatcherFn]:
+def _as_matcher_fn(matcher: Any) -> MatcherFn | None:
     """Adapt a variety of matcher shapes into a ``(embedding, bytes) -> float``.
 
     Accepts a plain callable, or a Member-1 matcher object exposing one of the
@@ -74,10 +76,14 @@ def _as_matcher_fn(matcher: Any) -> Optional[MatcherFn]:
     for name in ("compare_image", "score_image", "similarity_from_image", "verify_image"):
         method = getattr(matcher, name, None)
         if callable(method):
-            return lambda emb, data, _m=method: float(_m(emb, data))
+            def _wrap_method(emb: Sequence[float], data: bytes, m: Any = method) -> float:
+                return float(m(emb, data))
+            return _wrap_method
     # Otherwise treat it as a plain callable (function / lambda / callable object).
     if callable(matcher):
-        return lambda emb, data, _m=matcher: float(_m(emb, data))
+        def _wrap_callable(emb: Sequence[float], data: bytes, m: Any = matcher) -> float:
+            return float(m(emb, data))
+        return _wrap_callable
     raise TypeError(
         "matcher must be callable (embedding, image_bytes) -> float, or expose "
         "one of: compare_image / score_image / similarity_from_image / verify_image"
@@ -91,11 +97,11 @@ class OSINTDispatcher:
         self,
         matcher: Any = None,
         *,
-        lens: Optional[LensSearchEngine] = None,
-        bing: Optional[BingVisualSearch] = None,
-        playwright: Optional[PlaywrightScraper] = None,
-        downloader: Optional[MediaDownloader] = None,
-        threshold: Optional[float] = None,
+        lens: LensSearchEngine | None = None,
+        bing: BingVisualSearch | None = None,
+        playwright: PlaywrightScraper | None = None,
+        downloader: MediaDownloader | None = None,
+        threshold: float | None = None,
     ) -> None:
         self.matcher_fn = _as_matcher_fn(matcher)
         self.lens = lens if lens is not None else LensSearchEngine()
@@ -105,12 +111,7 @@ class OSINTDispatcher:
         if threshold is not None:
             self.threshold = threshold
         else:
-            try:
-                self.threshold = float(
-                    os.getenv("FACE_SIMILARITY_THRESHOLD", str(DEFAULT_THRESHOLD))
-                )
-            except ValueError:
-                self.threshold = DEFAULT_THRESHOLD
+            self.threshold = settings.face_similarity_threshold
 
     # -- stage 1: discovery ------------------------------------------------
 
@@ -125,7 +126,7 @@ class OSINTDispatcher:
                 )
                 if found:
                     return found, SearchEngine.GOOGLE_LENS_SERPAPI
-            except Exception as exc:  # engine failure must not abort the cascade
+            except Exception as exc:  # engine failure must not abort the cascade  # noqa: BLE001
                 logger.warning("Lens search failed: %s", exc)
 
         # Secondary: Bing Visual Search.
@@ -136,7 +137,7 @@ class OSINTDispatcher:
                 )
                 if found:
                     return found, SearchEngine.BING_VISUAL_SEARCH
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.warning("Bing search failed: %s", exc)
 
         # Autonomous fallback: Playwright headless browser on a local image.
@@ -147,7 +148,7 @@ class OSINTDispatcher:
                 )
                 if found:
                     return found, SearchEngine.PLAYWRIGHT_FALLBACK
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.warning("Playwright fallback failed: %s", exc)
 
         return [], SearchEngine.NONE
@@ -159,7 +160,7 @@ class OSINTDispatcher:
 
         try:
             post = social_parsers.parse_post(candidate.source_url)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.debug("Parser error for %s: %s", candidate.source_url, exc)
             post = None
         if post is None:
@@ -175,7 +176,7 @@ class OSINTDispatcher:
 
     def verify_candidates(
         self, candidates: list[SearchCandidate], query: OSINTQuery
-    ) -> tuple[Optional[VerifiedMatch], list[SearchEvidence]]:
+    ) -> tuple[VerifiedMatch | None, list[SearchEvidence]]:
         """Download + biometrically score candidates; stop at first authentic hit."""
 
         evidence = [c.to_evidence() for c in candidates]
@@ -201,7 +202,7 @@ class OSINTDispatcher:
                 continue
             try:
                 score = float(self.matcher_fn(query.query_embedding, media.data))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.debug("Matcher error on %s: %s", media_url, exc)
                 continue
             logger.info("Candidate %s scored cosine=%.4f", post.post_url, score)
@@ -263,12 +264,12 @@ class OSINTDispatcher:
 def run_osint_search(
     query_scan_id: str,
     *,
-    image_url: Optional[str] = None,
-    image_path: Optional[str] = None,
-    query_embedding: Optional[Sequence[float]] = None,
+    image_url: str | None = None,
+    image_path: str | None = None,
+    query_embedding: Sequence[float] | None = None,
     matcher: Any = None,
     max_candidates: int = 10,
-    threshold: Optional[float] = None,
+    threshold: float | None = None,
     strict: bool = False,
 ) -> OSINTSearchOutput:
     """Convenience entry point for the pipeline orchestrator.
@@ -290,8 +291,8 @@ def run_osint_search(
 
 
 __all__ = [
-    "OSINTQuery",
-    "OSINTDispatcher",
     "MatcherFn",
+    "OSINTDispatcher",
+    "OSINTQuery",
     "run_osint_search",
 ]

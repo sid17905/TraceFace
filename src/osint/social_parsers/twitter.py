@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Any, Optional
+from typing import Any
 
 from ..models import SocialPost
 
@@ -18,7 +18,7 @@ _STATUS_RE = re.compile(r"(?:twitter\.com|x\.com)/[^/]+/status(?:es)?/(\d+)", re
 _BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 
-def extract_tweet_id(url: str) -> Optional[str]:
+def extract_tweet_id(url: str) -> str | None:
     """Pull the numeric status id out of a tweet URL."""
 
     if not url:
@@ -98,7 +98,7 @@ def parse_syndication_json(data: dict[str, Any], url: str) -> SocialPost:
     )
 
 
-def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
+def fetch(url: str, timeout: float = 15.0) -> SocialPost | None:
     """Fetch a public tweet via the syndication API and parse it (best-effort)."""
 
     tweet_id = extract_tweet_id(url)
@@ -116,7 +116,7 @@ def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
         )
         resp.raise_for_status()
         data = resp.json()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
     post = parse_syndication_json(data, url)
     post.extra.setdefault("tweet_id", tweet_id)
@@ -125,8 +125,8 @@ def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
 
 __all__ = [
     "extract_tweet_id",
+    "fetch",
+    "parse_syndication_json",
     "syndication_token",
     "syndication_url",
-    "parse_syndication_json",
-    "fetch",
 ]

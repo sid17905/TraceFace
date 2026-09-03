@@ -13,21 +13,21 @@ link-extraction helpers are unit-tested with only the standard library.
 from __future__ import annotations
 
 import asyncio
-import os
 import random
 import re
-from typing import Optional
+
+from src.config import settings
 
 from .models import SearchCandidate, SearchEngine
 from .social_parsers import detect_platform
 
 # Rotated to reduce anti-bot fingerprinting on public portals.
 USER_AGENTS = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "  # noqa: ISC004
     "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "  # noqa: ISC004
     "(KHTML, like Gecko) Version/17.4 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "  # noqa: ISC004
     "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
 )
 
@@ -45,7 +45,7 @@ _NOISE_HOSTS = (
 
 
 def _headless_from_env() -> bool:
-    return os.getenv("PLAYWRIGHT_HEADLESS", "true").strip().lower() != "false"
+    return settings.playwright_headless
 
 
 def extract_links(page_html: str) -> list[str]:
@@ -87,7 +87,7 @@ class PlaywrightScraper:
     """Headless Chromium automation for dynamic scraping and reverse search."""
 
     def __init__(
-        self, headless: Optional[bool] = None, nav_timeout_ms: int = 30000
+        self, headless: bool | None = None, nav_timeout_ms: int = 30000
     ) -> None:
         self.headless = _headless_from_env() if headless is None else headless
         self.nav_timeout_ms = nav_timeout_ms
@@ -122,7 +122,7 @@ class PlaywrightScraper:
                 await page.goto(url, timeout=self.nav_timeout_ms, wait_until="domcontentloaded")
                 try:
                     await page.wait_for_load_state("networkidle", timeout=self.nav_timeout_ms)
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass  # networkidle is best-effort on chatty pages
                 return await page.content()
             finally:
@@ -152,7 +152,7 @@ class PlaywrightScraper:
                     file_input = page.locator("input[type='file']").first
                     await file_input.set_input_files(image_path, timeout=self.nav_timeout_ms)
                     await page.wait_for_load_state("networkidle", timeout=self.nav_timeout_ms)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return []
                 html = await page.content()
             finally:
@@ -174,8 +174,8 @@ class PlaywrightScraper:
 
 
 __all__ = [
-    "PlaywrightScraper",
     "USER_AGENTS",
+    "PlaywrightScraper",
     "extract_links",
     "links_to_candidates",
 ]

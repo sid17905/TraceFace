@@ -28,8 +28,35 @@ verification (``top_verified_match`` stays ``None``).
 
 from __future__ import annotations
 
+# -- orchestration (the primary entry points) ------------------------------
+from .dispatcher import (
+    OSINTDispatcher,
+    OSINTQuery,
+    run_osint_search,
+)
+
+# -- search engines --------------------------------------------------------
+from .lens_search import (
+    BingVisualSearch,
+    LensSearchEngine,
+    parse_bing_response,
+    parse_serpapi_response,
+    prioritize_social,
+)
+
+# -- media acquisition -----------------------------------------------------
+from .media_downloader import (
+    DownloadedMedia,
+    MediaDownloader,
+    MediaDownloadError,
+    default_downloader,
+    sha256_hex,
+)
+
 # -- error codes & core data models ---------------------------------------
 from .models import (
+    PLATFORM_LABELS,
+    SOCIAL_DOMAINS,
     BiometricVerification,
     OSINTError,
     OSINTErrorCode,
@@ -42,42 +69,15 @@ from .models import (
     cosine_similarity,
     new_search_id,
     utc_now_iso,
-    PLATFORM_LABELS,
-    SOCIAL_DOMAINS,
-)
-
-# -- search engines --------------------------------------------------------
-from .lens_search import (
-    BingVisualSearch,
-    LensSearchEngine,
-    parse_bing_response,
-    parse_serpapi_response,
-    prioritize_social,
 )
 from .playwright_scraper import PlaywrightScraper
-
-# -- media acquisition -----------------------------------------------------
-from .media_downloader import (
-    DownloadedMedia,
-    MediaDownloader,
-    MediaDownloadError,
-    default_downloader,
-    sha256_hex,
-)
 
 # -- social-media provenance parsers --------------------------------------
 from .social_parsers import detect_platform, parse_post
 
-# -- orchestration (the primary entry points) ------------------------------
-from .dispatcher import (
-    OSINTDispatcher,
-    OSINTQuery,
-    run_osint_search,
-)
-
 __version__ = "1.0.0"
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     # orchestration
     "OSINTDispatcher",
     "OSINTQuery",

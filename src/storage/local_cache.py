@@ -1,10 +1,8 @@
-import os
 from pathlib import Path
-from typing import Optional
 
 
 class LocalArtifactCache:
-    def __init__(self, cache_dir: Optional[str] = None):
+    def __init__(self, cache_dir: str | None = None):
         if cache_dir:
             self.base_dir = Path(cache_dir)
         else:
@@ -19,7 +17,7 @@ class LocalArtifactCache:
         file_path = self._get_path(key)
         file_path.write_bytes(data)
 
-    def retrieve(self, key: str) -> Optional[bytes]:
+    def retrieve(self, key: str) -> bytes | None:
         file_path = self._get_path(key)
         if file_path.exists():
             return file_path.read_bytes()

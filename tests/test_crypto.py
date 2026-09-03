@@ -1,6 +1,5 @@
-import pytest
-from src.crypto.hasher import sha256_bytes, keccak256_bytes, hash_face_embedding
-from src.crypto.canonicalizer import canonicalize_json, canonicalize_and_hash
+from src.crypto.canonicalizer import canonicalize_and_hash, canonicalize_json
+from src.crypto.hasher import hash_face_embedding, keccak256_bytes, sha256_bytes
 from src.crypto.merkle import build_provenance_merkle_tree, verify_merkle_root
 
 

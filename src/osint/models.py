@@ -13,10 +13,11 @@ from __future__ import annotations
 
 import math
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import IntEnum
-from typing import Any, Optional, Sequence
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Error codes  (docs/COMMON_REFERENCE.md §3)
@@ -130,7 +131,7 @@ class SearchCandidate:
     platform: str = "generic"    # internal key from PLATFORM_LABELS
     engine: str = SearchEngine.GOOGLE_LENS_SERPAPI
 
-    def to_evidence(self) -> "SearchEvidence":
+    def to_evidence(self) -> SearchEvidence:
         return SearchEvidence(
             source_title=self.source_title,
             source_url=self.source_url,
@@ -227,7 +228,7 @@ class VerifiedMatch:
         target_media_url: str,
         target_media_sha256: str,
         verification: BiometricVerification,
-    ) -> "VerifiedMatch":
+    ) -> VerifiedMatch:
         return cls(
             platform=post.platform_label,
             post_url=post.post_url,
@@ -249,7 +250,7 @@ class OSINTSearchOutput:
     search_engine_used: str = SearchEngine.NONE
     execution_time_seconds: float = 0.0
     candidates_discovered: int = 0
-    top_verified_match: Optional[VerifiedMatch] = None
+    top_verified_match: VerifiedMatch | None = None
     raw_search_evidence: list[SearchEvidence] = field(default_factory=list)
     search_id: str = field(default_factory=new_search_id)
 
@@ -277,18 +278,18 @@ class OSINTSearchOutput:
 
 
 __all__ = [
-    "OSINTErrorCode",
-    "OSINTError",
-    "SearchEngine",
     "PLATFORM_LABELS",
     "SOCIAL_DOMAINS",
+    "BiometricVerification",
+    "OSINTError",
+    "OSINTErrorCode",
+    "OSINTSearchOutput",
+    "SearchCandidate",
+    "SearchEngine",
+    "SearchEvidence",
+    "SocialPost",
+    "VerifiedMatch",
+    "cosine_similarity",
     "new_search_id",
     "utc_now_iso",
-    "cosine_similarity",
-    "SearchCandidate",
-    "SocialPost",
-    "BiometricVerification",
-    "SearchEvidence",
-    "VerifiedMatch",
-    "OSINTSearchOutput",
 ]

@@ -14,7 +14,7 @@ from __future__ import annotations
 import html as _html
 import json
 import re
-from typing import Any, Optional
+from typing import Any
 
 from ..models import SocialPost
 
@@ -57,10 +57,10 @@ def extract_open_graph(page_html: str) -> dict[str, str]:
         for tag in soup.find_all("meta"):
             key = tag.get("property") or tag.get("name")
             content = tag.get("content")
-            if key and content is not None:
+            if isinstance(key, str) and isinstance(content, str):
                 found.setdefault(key.strip().lower(), content.strip())
         return found or _regex_meta(page_html)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return _regex_meta(page_html)
 
 
@@ -125,7 +125,7 @@ def parse_open_graph(page_html: str, url: str, platform: str = "generic") -> Soc
     )
 
 
-def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
+def fetch(url: str, timeout: float = 15.0) -> SocialPost | None:
     """Fetch a web page and parse its OpenGraph/JSON-LD metadata (best-effort)."""
 
     try:
@@ -139,14 +139,14 @@ def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
             headers={"User-Agent": "Mozilla/5.0 (compatible; TraceFaceBot/1.0)"},
         )
         resp.raise_for_status()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
     return parse_open_graph(resp.text, url)
 
 
 __all__ = [
-    "extract_open_graph",
     "extract_json_ld",
-    "parse_open_graph",
+    "extract_open_graph",
     "fetch",
+    "parse_open_graph",
 ]

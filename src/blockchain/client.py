@@ -1,39 +1,42 @@
-import os
 import json
+import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
-from web3 import Web3
+from typing import Any
+
 from eth_account import Account
+from web3 import Web3
+
+from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class BlockchainClient:
     def __init__(
         self,
-        rpc_url: Optional[str] = None,
-        contract_address: Optional[str] = None,
-        private_key: Optional[str] = None,
-        abi_path: Optional[str] = None,
+        rpc_url: str | None = None,
+        contract_address: str | None = None,
+        private_key: str | None = None,
+        abi_path: str | None = None,
     ):
-        self.rpc_url = rpc_url or os.getenv("RPC_URL", "http://127.0.0.1:8545")
+        self.rpc_url = rpc_url or settings.rpc_url
         self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
         
-        self.private_key = (
-            private_key
-            or os.getenv("PRIVATE_KEY")
-            or "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-        )
+        self.private_key = private_key or settings.private_key
+        if not self.private_key:
+            raise RuntimeError("PRIVATE_KEY must be provided")
         self.account = Account.from_key(self.private_key)
 
         abi, detected_address = self._load_contract_metadata(abi_path)
-        self.contract_address = contract_address or os.getenv("CONTRACT_ADDRESS") or detected_address
+        self.contract_address = contract_address or settings.contract_address or detected_address
         
         if self.contract_address and self.contract_address != "0x0000000000000000000000000000000000000000":
             self.contract_address = Web3.to_checksum_address(self.contract_address)
-            self.contract = self.w3.eth.contract(address=self.contract_address, abi=abi)
+            self.contract = self.w3.eth.contract(address=self.contract_address, abi=abi)  # type: ignore
         else:
-            self.contract = None
+            self.contract = None  # type: ignore
 
-    def _load_contract_metadata(self, custom_path: Optional[str]) -> Tuple[list, str]:
+    def _load_contract_metadata(self, custom_path: str | None = None) -> tuple[list, str]:
         path = (
             Path(custom_path)
             if custom_path
@@ -47,11 +50,11 @@ class BlockchainClient:
     def is_connected(self) -> bool:
         try:
             return self.w3.is_connected()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def _format_bytes32(self, hex_val: str) -> bytes:
-        clean = hex_val[2:] if hex_val.startswith("0x") else hex_val
+        clean = hex_val.removeprefix("0x")
         clean = clean.zfill(64)[:64]
         return bytes.fromhex(clean)
 
@@ -60,7 +63,7 @@ class BlockchainClient:
         record_hash: str,
         ipfs_cid: str,
         face_vector_hash: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Signs and broadcasts registerProvenance transaction to EVM blockchain.
         """
@@ -98,23 +101,23 @@ class BlockchainClient:
         })
 
         signed_txn = self.w3.eth.account.sign_transaction(txn, private_key=self.private_key)
-        tx_hash_bytes = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        tx_hash_bytes = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
         tx_hash = "0x" + tx_hash_bytes.hex()
 
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash_bytes, timeout=60)
 
         return {
-            "status": "success" if receipt.status == 1 else "failed",
+            "status": "success" if receipt.status == 1 else "failed",  # type: ignore
             "tx_hash": tx_hash,
-            "block_number": receipt.blockNumber,
-            "gas_used": receipt.gasUsed,
+            "block_number": receipt.blockNumber,  # type: ignore
+            "gas_used": receipt.gasUsed,  # type: ignore
             "record_hash": record_hash,
             "ipfs_cid": ipfs_cid,
             "face_vector_hash": face_vector_hash,
             "registrant": self.account.address,
         }
 
-    def get_provenance(self, record_hash: str) -> Dict[str, Any]:
+    def get_provenance(self, record_hash: str) -> dict[str, Any]:
         if not self.contract:
             raise RuntimeError("Contract is not configured.")
 

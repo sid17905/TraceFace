@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
+
 from src.blockchain.client import BlockchainClient
-from src.storage.ipfs_client import IPFSClient
 from src.crypto.merkle import build_provenance_merkle_tree
+from src.storage.ipfs_client import IPFSClient
 
 
 @dataclass
@@ -16,12 +17,12 @@ class VerificationResult:
     on_chain_timestamp: int
     on_chain_registrant: str
     recalculated_merkle_root: str
-    leaves_breakdown: Dict[str, str]
-    tamper_details: Optional[str] = None
-    social_metadata: Optional[Dict[str, Any]] = None
-    biometric_similarity: Optional[float] = None
+    leaves_breakdown: dict[str, str]
+    tamper_details: str | None = None
+    social_metadata: dict[str, Any] | None = None
+    biometric_similarity: float | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "is_authentic": self.is_authentic,
             "status": self.status,
@@ -42,8 +43,8 @@ class VerificationResult:
 class ZeroTamperVerifier:
     def __init__(
         self,
-        blockchain_client: Optional[BlockchainClient] = None,
-        ipfs_client: Optional[IPFSClient] = None,
+        blockchain_client: BlockchainClient | None = None,
+        ipfs_client: IPFSClient | None = None,
     ):
         self.chain = blockchain_client or BlockchainClient()
         self.ipfs = ipfs_client or IPFSClient()
@@ -77,10 +78,9 @@ class ZeroTamperVerifier:
         payload = self.ipfs.fetch_json(cid)
 
         # Simulation mode for hackathon demonstrations
-        if simulate_tamper:
-            if "social_provenance" in payload:
-                payload["social_provenance"]["post_text_sha256"] = "0x" + "0" * 64
-                payload["social_provenance"]["author_handle"] = "@imposter_tampered"
+        if simulate_tamper and "social_provenance" in payload:
+            payload["social_provenance"]["post_text_sha256"] = "0x" + "0" * 64
+            payload["social_provenance"]["author_handle"] = "@imposter_tampered"
 
         merkle_info = payload.get("cryptographic_merkle", {})
         leaf_source = merkle_info.get("leaf_source_image", "0x" + "0" * 64)

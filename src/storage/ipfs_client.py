@@ -1,23 +1,28 @@
-import os
-import json
 import hashlib
-from typing import Any, Dict, Optional
+import json
+import logging
+from typing import Any
+
 import httpx
+
+from src.config import settings
 from src.crypto.canonicalizer import canonicalize_json
 from src.storage.local_cache import LocalArtifactCache
+
+logger = logging.getLogger(__name__)
 
 
 class IPFSClient:
     def __init__(
         self,
-        pinata_api_key: Optional[str] = None,
-        pinata_secret_key: Optional[str] = None,
-        gateway_url: Optional[str] = None,
-        cache_dir: Optional[str] = None,
-    ):
-        self.pinata_api_key = pinata_api_key or os.getenv("PINATA_API_KEY")
-        self.pinata_secret_key = pinata_secret_key or os.getenv("PINATA_SECRET_KEY")
-        self.gateway_url = gateway_url or os.getenv("IPFS_GATEWAY", "https://gateway.pinata.cloud/ipfs/")
+        pinata_api_key: str | None = None,
+        pinata_secret_key: str | None = None,
+        gateway_url: str | None = None,
+        cache_dir: str | None = None,
+    ) -> None:
+        self.pinata_api_key = pinata_api_key or settings.pinata_api_key
+        self.pinata_secret_key = pinata_secret_key or settings.pinata_secret_key
+        self.gateway_url = gateway_url or settings.ipfs_gateway
         if not self.gateway_url.endswith("/"):
             self.gateway_url += "/"
         self.cache = LocalArtifactCache(cache_dir)
@@ -27,12 +32,11 @@ class IPFSClient:
         sha = hashlib.sha256(data_bytes).digest()
         # Multihash prefix: 0x12 (sha2-256), 0x20 (32 bytes length)
         multihash = b"\x12\x20" + sha
-        import base64
         # Deterministic representation
         hex_digest = hashlib.sha256(multihash).hexdigest()
         return f"bafybei{hex_digest[:46]}"
 
-    def pin_json(self, payload: Dict[str, Any], name: Optional[str] = "traceface_provenance.json") -> str:
+    def pin_json(self, payload: dict[str, Any], name: str | None = "traceface_provenance.json") -> str:
         """
         Pins canonical JSON to IPFS (via Pinata API if available, else deterministic local cache).
         """
@@ -61,7 +65,7 @@ class IPFSClient:
                         cid = resp.json().get("IpfsHash")
                         self.cache.store(cid, canonical_bytes)
                         return cid
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
         # Local deterministic fallback
@@ -69,7 +73,7 @@ class IPFSClient:
         self.cache.store(cid, canonical_bytes)
         return cid
 
-    def fetch_json(self, cid: str) -> Dict[str, Any]:
+    def fetch_json(self, cid: str) -> dict[str, Any]:
         """
         Fetches JSON payload by CID from local cache or IPFS gateways.
         """
@@ -93,7 +97,7 @@ class IPFSClient:
                         raw_bytes = resp.content
                         self.cache.store(cid, raw_bytes)
                         return resp.json()
-            except Exception:
+            except Exception:  # noqa: BLE001, S112
                 continue
 
         raise RuntimeError(f"Failed to retrieve IPFS artifact for CID: {cid}")
