@@ -1,3 +1,11 @@
+"""
+CLI Visualizer Module
+
+This module provides a rich text user interface for rendering biometric
+scan results directly in the terminal. It relies on the `rich` Python library
+to draw tables, panels, and confidence gauges.
+"""
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, TextColumn
@@ -12,6 +20,9 @@ console = Console()
 def print_scan_results(output: FaceScanOutput):
     """
     Renders a beautiful CLI visualization of the biometric scan output.
+
+    Args:
+        output (FaceScanOutput): The complete scan data model to render.
     """
     # Create the main table for metadata
     meta_table = Table(show_header=False, box=None, padding=(0, 2))

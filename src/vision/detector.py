@@ -1,3 +1,11 @@
+"""
+Face Detection Module
+
+This module is responsible for locating faces within an image and extracting
+their bounding boxes and 5-point facial landmarks. It uses the RetinaFace
+model (via InsightFace) to achieve highly accurate, view-invariant detection.
+"""
+
 import os
 import sys
 import warnings
@@ -15,9 +23,20 @@ warnings.filterwarnings(
 class FaceDetector:
     """
     RetinaFace detector wrapper for finding faces and 5-point landmarks.
+
+    This class loads the RetinaFace detection module from the provided
+    model pack and configures it to run on the CPU to extract bounding
+    boxes and landmarks.
     """
 
     def __init__(self, model_name: str = "buffalo_l", ctx_id: int = 0):
+        """
+        Initializes the FaceDetector with the specified InsightFace model.
+
+        Args:
+            model_name (str, optional): Name of the model pack to load. Defaults to "buffalo_l".
+            ctx_id (int, optional): Context ID. <= 0 means CPU. Defaults to 0.
+        """
         # Suppress insightface hardcoded print statements
         original_stdout = sys.stdout
         sys.stdout = open(os.devnull, "w")
@@ -35,8 +54,19 @@ class FaceDetector:
 
     def detect_face(self, image: np.ndarray) -> dict[str, Any]:
         """
-        Detects the most prominent face in the image.
-        Returns a dictionary with bounding box and landmarks.
+        Detects the most prominent face in the image based on bounding box area.
+
+        Args:
+            image (np.ndarray): The input image array in BGR format.
+
+        Returns:
+            dict[str, Any]: A dictionary containing:
+                - 'bbox' (list[int]): Bounding box coordinates [x_min, y_min, x_max, y_max].
+                - 'landmarks' (list[list[int]]): 5-point facial landmarks.
+                - 'confidence' (float): Detection confidence score (0 to 1).
+
+        Raises:
+            ValueError: If no faces are detected in the image.
         """
         faces = self.app.get(image)
         if not faces:

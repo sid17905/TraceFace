@@ -1,3 +1,12 @@
+"""
+Face Embedding Module
+
+This module utilizes the ArcFace model (via InsightFace) to extract highly discriminative
+512-dimensional facial embeddings. It also provides cryptographic hashing mechanisms
+(Keccak-256, SHA-256) and perceptual hashing (pHash) to securely fingerprint
+the biometric data and original image.
+"""
+
 import os
 import sys
 import warnings
@@ -18,9 +27,20 @@ warnings.filterwarnings(
 class FaceEmbedder:
     """
     ArcFace embedder wrapper for extracting 512-D vectors and computing cryptographic hashes.
+
+    This class loads the ArcFace recognition module and performs the extraction
+    and unit normalization of the biometric vector. It also calculates standard
+    and perceptual hashes to establish an immutable identity record.
     """
 
     def __init__(self, model_name: str = "buffalo_l", ctx_id: int = 0):
+        """
+        Initializes the FaceEmbedder with the specified ArcFace model.
+
+        Args:
+            model_name (str, optional): Name of the model pack to load. Defaults to "buffalo_l".
+            ctx_id (int, optional): Context ID. <= 0 means CPU. Defaults to 0.
+        """
         # We instantiate with detection and recognition to satisfy FaceAnalysis assertions
         # Suppress insightface hardcoded print statements
         original_stdout = sys.stdout

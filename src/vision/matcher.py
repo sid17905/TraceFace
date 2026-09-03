@@ -1,8 +1,25 @@
+"""
+Biometric Matching Module
+
+This module handles the mathematical comparison between 512-dimensional
+biometric vectors extracted by the ArcFace embedder. It computes Cosine
+Similarity and Euclidean Distance, enforcing strict matching thresholds.
+"""
+
 import numpy as np
 
 
 def compute_cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
-    """Computes cosine similarity between two vectors."""
+    """
+    Computes the cosine similarity between two unit-normalized embedding vectors.
+
+    Args:
+        vec1 (np.ndarray): The first embedding vector.
+        vec2 (np.ndarray): The second embedding vector.
+
+    Returns:
+        float: The cosine similarity score, ranging from -1.0 to 1.0.
+    """
     v1 = np.asarray(vec1).flatten()
     v2 = np.asarray(vec2).flatten()
 

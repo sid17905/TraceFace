@@ -1,3 +1,10 @@
+"""
+Pipeline Orchestrator Module
+
+This module serves as the primary integration point between the Computer Vision
+engine and the rest of the TraceFace system (OSINT and Web3 modules).
+"""
+
 import uuid
 from datetime import datetime, timezone
 
@@ -10,7 +17,18 @@ from src.vision.quality import check_image_quality
 
 
 class VisionPipeline:
+    """
+    High-level orchestrator for the biometric vision pipeline.
+
+    This class instantiates the singleton detectors and embedders,
+    managing the full lifecycle of a facial scan from a raw image path
+    to a fully populated FaceScanOutput data model.
+    """
+
     def __init__(self):
+        """
+        Initializes the VisionPipeline and its underlying deep learning models.
+        """
         # Initialize the singletons
         self.detector = FaceDetector()
         self.embedder = FaceEmbedder()

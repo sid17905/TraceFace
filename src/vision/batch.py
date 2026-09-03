@@ -1,3 +1,11 @@
+"""
+Batch Evaluation Module
+
+This module orchestrates the processing of multiple candidate images against
+a single query embedding. It incorporates logic for evaluating group photos,
+filtering out extreme profile faces via 2D landmarks, and ranking results.
+"""
+
 from typing import Any
 
 import cv2
@@ -10,7 +18,21 @@ from src.vision.quality import check_image_quality
 
 
 class BatchEvaluator:
+    """
+    Evaluates batches of candidate images to find the best match for a query.
+
+    This class handles group photos by evaluating every face detected and
+    applying geometric heuristics to discard unusable (extreme profile) faces.
+    """
+
     def __init__(self, detector: FaceDetector, embedder: FaceEmbedder):
+        """
+        Initializes the BatchEvaluator.
+
+        Args:
+            detector (FaceDetector): The initialized FaceDetector instance.
+            embedder (FaceEmbedder): The initialized FaceEmbedder instance.
+        """
         self.detector = detector
         self.embedder = embedder
 
