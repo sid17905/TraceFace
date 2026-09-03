@@ -1,0 +1,15 @@
+# Environment variables
+.env
+
+# Python virtual environment
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Node modules
+node_modules/
+
+# OS generated files
+.DS_Store
