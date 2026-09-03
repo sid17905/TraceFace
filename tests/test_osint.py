@@ -22,7 +22,7 @@ if str(REPO_ROOT) not in sys.path:
 
 FIXTURES = REPO_ROOT / "data" / "fixtures"
 
-from src.osint import (  # noqa: E402
+from src.osint import (
     BiometricVerification,
     DownloadedMedia,
     OSINTDispatcher,
@@ -42,16 +42,20 @@ from src.osint import (  # noqa: E402
     run_osint_search,
     sha256_hex,
 )
-from src.osint import dispatcher as dispatcher_mod  # noqa: E402
-from src.osint import media_downloader as md  # noqa: E402
-from src.osint.lens_search import (  # noqa: E402
+from src.osint import dispatcher as dispatcher_mod
+from src.osint import media_downloader as md
+from src.osint import playwright_scraper as pw
+from src.osint.lens_search import (
     BingVisualSearch,
     LensSearchEngine,
     parse_bing_response,
 )
-from src.osint import playwright_scraper as pw  # noqa: E402
-from src.osint.social_parsers import generic_web, instagram, reddit, twitter  # noqa: E402
-
+from src.osint.social_parsers import (
+    generic_web,
+    instagram,
+    reddit,
+    twitter,
+)
 
 # ===========================================================================
 # models

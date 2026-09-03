@@ -13,6 +13,7 @@ link-extraction helpers are unit-tested with only the standard library.
 from __future__ import annotations
 
 import asyncio
+import os
 import random
 import re
 
@@ -45,6 +46,8 @@ _NOISE_HOSTS = (
 
 
 def _headless_from_env() -> bool:
+    if "PLAYWRIGHT_HEADLESS" in os.environ:
+        return os.environ["PLAYWRIGHT_HEADLESS"].strip().lower() in ("1", "true", "yes", "t")
     return settings.playwright_headless
 
 

@@ -107,14 +107,14 @@ def print_phase_header(title: str) -> None:
     console.print(f"\n[bold magenta][*] {title}[/bold magenta]")
 
 def print_success(msg: str) -> None:
-    console.print(f"[bold green]✔[/bold green] {msg}")
+    console.print(f"[bold green][OK][/bold green] {msg}")
 
 def print_error(msg: str) -> None:
-    console.print(f"[bold red]✘ ERROR:[/bold red] {msg}")
+    console.print(f"[bold red][ERROR]:[/bold red] {msg}")
 
 def simulate_radar_scan() -> None:
-    import time
     import random
+    import time
     chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     console.print("[dim]Initiating Biometric Deep Scan...[/dim]")
     for _ in range(15):
@@ -149,3 +149,71 @@ def print_verification_result(is_valid: bool, reason: str = "") -> None:
             expand=False
         )
     console.print(Align.center(panel))
+
+
+def print_propagation_dag(graph: Any) -> None:
+    from src.analytics.graph_visualizer import build_rich_tree
+    tree = build_rich_tree(graph)
+    console.print(
+        Panel(
+            tree,
+            title="[bold cyan]Temporal Origin & Propagation Graph (Root-Zero DAG)[/bold cyan]",
+            border_style="cyan",
+            expand=False,
+        )
+    )
+
+
+def print_propagation_ascii(graph: Any) -> None:
+    from src.analytics.graph_visualizer import render_ascii_timeline
+    console.print(
+        Panel(
+            render_ascii_timeline(graph),
+            title="[bold cyan]ASCII Timeline Waterfall (Root-Zero DAG)[/bold cyan]",
+            border_style="cyan",
+            expand=False,
+        )
+    )
+
+
+def print_zk_verification_result(zk_result: dict[str, Any]) -> None:
+    is_valid = zk_result.get("is_valid_match", False)
+    sim = zk_result.get("cosine_similarity", 0.0)
+    thresh = zk_result.get("threshold_enforced", 0.68)
+    q_commit = zk_result.get("query_commitment", "")
+    l_commit = zk_result.get("ledger_commitment", "")
+
+    table = Table(title="[bold yellow]Zero-Knowledge Biometric SNARK Proof", show_header=False)
+    table.add_row("Proof Protocol", "[cyan]Groth16 (BN128)[/cyan]")
+    table.add_row("Public Match Signal", "[green]1 (VERIFIED)[/green]" if is_valid else "[red]0 (REJECTED)[/red]")
+    table.add_row("Proved Similarity", f"[bold green]{sim:.4f}[/bold green] (Threshold >= {thresh})")
+    table.add_row("Query Commitment", f"[dim]{q_commit}[/dim]")
+    table.add_row("Ledger Commitment", f"[dim]{l_commit}[/dim]")
+    table.add_row("Privacy Guarantee", "[green]Zero float embeddings revealed on-chain[/green]")
+
+    status_color = "green" if is_valid else "red"
+    title = "[bold bright_green]zk-SNARK Biometric Proof Verified[/bold bright_green]" if is_valid else "[bold red]zk-SNARK Proof Verification Failed[/bold red]"
+    console.print(Panel(table, title=title, border_style=status_color, expand=False))
+
+
+def print_dispute_status(status_badge: str, record_hash: str, dispute_info: dict[str, Any] | None = None) -> None:
+    table = Table(title="[bold magenta]On-Chain Provenance & Dispute Status", show_header=False)
+    table.add_row("Record Hash", f"[dim]{record_hash}[/dim]")
+    table.add_row("Current Status", f"[bold]{status_badge}[/bold]")
+    if dispute_info:
+        table.add_row("Claimant", f"[cyan]{dispute_info.get('claimant', 'Unknown')}[/cyan]")
+        table.add_row("Reason Code", str(dispute_info.get("reason_code", "N/A")))
+        table.add_row("Evidence CID", f"[dim]{dispute_info.get('evidence_cid', '')}[/dim]")
+        table.add_row("Resolved?", "[green]YES[/green]" if dispute_info.get("resolved") else "[yellow]PENDING REVIEW[/yellow]")
+    console.print(Panel(table, title="[bold magenta]Ledger Dispute Audit[/bold magenta]", border_style="magenta", expand=False))
+
+
+def print_takedown_receipt(receipt: dict[str, Any]) -> None:
+    table = Table(title="[bold bright_red]EIP-712 Decentralized Takedown Notice Filed", show_header=False)
+    table.add_row("Status", f"[bold green]{receipt.get('status', 'submitted').upper()}[/bold green]")
+    table.add_row("TX Hash", f"[yellow]{receipt.get('tx_hash', 'N/A')}[/yellow]")
+    table.add_row("Record Hash", f"[dim]{receipt.get('record_hash', '')}[/dim]")
+    table.add_row("Claimant", f"[cyan]{receipt.get('claimant', '')}[/cyan]")
+    table.add_row("Reason Code", str(receipt.get("reason_code", "")))
+    table.add_row("Evidence CID", f"[dim]{receipt.get('evidence_cid', '')}[/dim]")
+    console.print(Panel(table, title="[bold red]Takedown Claim Successfully Anchored[/bold red]", border_style="red", expand=False))

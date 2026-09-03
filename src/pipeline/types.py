@@ -43,3 +43,30 @@ class FaceScanOutput(BaseModel):
     embedding_vector: list[float]
     embedding_hash_keccak256: str
     perceptual_hash_phash: str
+
+
+class OriginNode(BaseModel):
+    node_id: str
+    platform: str
+    post_url: str
+    author_handle: str = ""
+    timestamp_utc: str = ""
+    phash: str = ""
+    similarity_score: float = 0.0
+    laplacian_score: float = 0.0
+    is_root_zero: bool = False
+
+
+class PropagationEdge(BaseModel):
+    source_id: str
+    target_id: str
+    delta_seconds: float = 0.0
+    phash_hamming_distance: int = 0
+    degradation_score: float = 0.0
+
+
+class PropagationGraph(BaseModel):
+    nodes: list[OriginNode] = []
+    edges: list[PropagationEdge] = []
+    root_zero_node_id: str | None = None
+    total_hops: int = 0
