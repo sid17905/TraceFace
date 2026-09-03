@@ -39,16 +39,16 @@ class FaceDetector:
         """
         # Suppress insightface hardcoded print statements
         original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, "w")
-        try:
-            self.app = insightface.app.FaceAnalysis(
-                name=model_name,
-                allowed_modules=["detection"],
-                providers=["CPUExecutionProvider"],
-            )
-        finally:
-            sys.stdout.close()
-            sys.stdout = original_stdout
+        with open(os.devnull, "w") as devnull:
+            sys.stdout = devnull
+            try:
+                self.app = insightface.app.FaceAnalysis(
+                    name=model_name,
+                    allowed_modules=["detection"],
+                    providers=["CPUExecutionProvider"],
+                )
+            finally:
+                sys.stdout = original_stdout
 
         self.app.prepare(ctx_id=ctx_id, det_size=(640, 640))
 

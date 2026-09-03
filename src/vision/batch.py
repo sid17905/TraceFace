@@ -78,7 +78,7 @@ class BatchEvaluator:
             if img is None:
                 continue
 
-            is_blurry, blur_score = check_image_quality(img)
+            is_blurry, _ = check_image_quality(img)
             if is_blurry:
                 # We can skip or record low quality
                 results.append(

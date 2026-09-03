@@ -68,7 +68,7 @@ def test_detector_and_embedder(detector, embedder):
         if str(e) == "ERR_NO_FACE_DETECTED":
             pytest.skip("No face detected in sample image")
         else:
-            raise e
+            raise
 
 
 def test_matcher():

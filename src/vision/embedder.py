@@ -44,16 +44,16 @@ class FaceEmbedder:
         # We instantiate with detection and recognition to satisfy FaceAnalysis assertions
         # Suppress insightface hardcoded print statements
         original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, "w")
-        try:
-            self.app = insightface.app.FaceAnalysis(
-                name=model_name,
-                allowed_modules=["detection", "recognition"],
-                providers=["CPUExecutionProvider"],
-            )
-        finally:
-            sys.stdout.close()
-            sys.stdout = original_stdout
+        with open(os.devnull, "w") as devnull:
+            sys.stdout = devnull
+            try:
+                self.app = insightface.app.FaceAnalysis(
+                    name=model_name,
+                    allowed_modules=["detection", "recognition"],
+                    providers=["CPUExecutionProvider"],
+                )
+            finally:
+                sys.stdout = original_stdout
 
         self.app.prepare(ctx_id=ctx_id, det_size=(640, 640))
         self.recognition_model = self.app.models["recognition"]
