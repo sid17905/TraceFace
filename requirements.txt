@@ -11,5 +11,8 @@ pycryptodome>=3.20.0
 pydantic>=2.6.0
 python-dotenv>=1.0.1
 
+# CLI & Visualization
+rich>=13.7.0
+
 # --- Testing ---
 pytest>=8.0.0

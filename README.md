@@ -12,11 +12,20 @@
 
 ## 🏗️ The 3-Stage Pipeline
 
-```
 [ Input Face Scan ]
        │
        ▼
- 1. Biometric Vision Engine ──> RetinaFace + ArcFace (512-D Vectors + 5-pt Landmark Alignment)
+## Core Modules
+
+### 1. Vision Engine & Biometrics (Member 1)
+The vision pipeline is designed for sub-millisecond, highly precise face localization and extraction.
+* **Detection & Alignment:** Uses `RetinaFace` (ResNet50 backbone) to extract bounding boxes and 5-point facial landmarks. Faces are rotated and aligned using an affine transformation to a canonical 112x112 grid to ensure extreme view invariance.
+* **Vector Embeddings:** Uses the `InsightFace ArcFace` (buffalo_l) model to extract 512-dimensional float32 continuous biometric vectors projected onto an $L_2$ unit hypersphere.
+* **Anti-Spoofing & Quality:** Incorporates Laplacian Variance filtering to discard blurry or out-of-focus images before processing. Implements a 2D landmark geometric yaw estimator to reject extreme profile faces.
+* **Cryptographic Hashing:** The embedding float array is hashed using **Keccak-256** and **SHA-256**. The raw source image is also perceptually hashed (**pHash**) via 64-bit DCT frequency domain algorithms for structural integrity checks.
+* **Matcher:** Cross-references embeddings using Cosine Similarity and Euclidean Distance with a strict match threshold of $S_c \ge 0.68$.
+
+### 2. OSINT Web Scraper (Member 2)
        │
        ▼
  2. OSINT Social Search     ──> Google Lens / SerpApi / Playwright Scraping (Real Social Posts)
