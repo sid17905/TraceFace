@@ -1,12 +1,15 @@
 import hashlib
 import json
-import os
+import logging
 from typing import Any
 
 import httpx
 
+from src.config import settings
 from src.crypto.canonicalizer import canonicalize_json
 from src.storage.local_cache import LocalArtifactCache
+
+logger = logging.getLogger(__name__)
 
 
 class IPFSClient:
@@ -16,10 +19,10 @@ class IPFSClient:
         pinata_secret_key: str | None = None,
         gateway_url: str | None = None,
         cache_dir: str | None = None,
-    ):
-        self.pinata_api_key = pinata_api_key or os.getenv("PINATA_API_KEY")
-        self.pinata_secret_key = pinata_secret_key or os.getenv("PINATA_SECRET_KEY")
-        self.gateway_url = gateway_url or os.getenv("IPFS_GATEWAY") or "https://gateway.pinata.cloud/ipfs/"
+    ) -> None:
+        self.pinata_api_key = pinata_api_key or settings.pinata_api_key
+        self.pinata_secret_key = pinata_secret_key or settings.pinata_secret_key
+        self.gateway_url = gateway_url or settings.ipfs_gateway
         if not self.gateway_url.endswith("/"):
             self.gateway_url += "/"
         self.cache = LocalArtifactCache(cache_dir)

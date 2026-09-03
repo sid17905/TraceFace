@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import os
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, Optional
+
+from src.config import settings
 
 # Content types accepted for candidate media.
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
@@ -46,7 +47,7 @@ def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def sniff_image_type(data: bytes) -> Optional[str]:
+def sniff_image_type(data: bytes) -> str | None:
     """Best-effort image content-type detection from magic bytes."""
 
     if len(data) < 12:
@@ -70,7 +71,7 @@ def validate_content_type(content_type: str) -> bool:
     return normalize_content_type(content_type) in ALLOWED_CONTENT_TYPES
 
 
-def resolve_content_type(header_value: str, data: bytes) -> Optional[str]:
+def resolve_content_type(header_value: str, data: bytes) -> str | None:
     """Return a trusted content type, preferring magic-byte sniffing.
 
     The sniffed type wins when present (servers frequently mislabel CDN assets as
@@ -98,7 +99,7 @@ class DownloadedMedia:
         return len(self.data)
 
     @classmethod
-    def from_bytes(cls, url: str, data: bytes, content_type: str = "") -> "DownloadedMedia":
+    def from_bytes(cls, url: str, data: bytes, content_type: str = "") -> DownloadedMedia:
         """Construct from an in-memory buffer (used by tests and sync paths)."""
 
         resolved = resolve_content_type(content_type, data)
@@ -156,7 +157,7 @@ class MediaDownloader:
 
     async def download_many_async(
         self, urls: Iterable[str]
-    ) -> list[Optional[DownloadedMedia]]:
+    ) -> list[DownloadedMedia | None]:
         """Fetch many URLs concurrently. Dead links resolve to ``None``."""
 
         try:  # lazy, optional dependency
@@ -172,18 +173,18 @@ class MediaDownloader:
             follow_redirects=True, headers=headers
         ) as client:
 
-            async def _guarded(u: str) -> Optional[DownloadedMedia]:
+            async def _guarded(u: str) -> DownloadedMedia | None:
                 async with sem:
                     try:
                         return await self._download_one(client, u)
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         return None  # graceful: skip dead/blocked candidate
 
             return await asyncio.gather(*(_guarded(u) for u in urls))
 
     # -- sync --------------------------------------------------------------
 
-    def fetch(self, url: str) -> Optional[DownloadedMedia]:
+    def fetch(self, url: str) -> DownloadedMedia | None:
         """Synchronously fetch a single asset; returns ``None`` on any failure."""
 
         try:
@@ -211,7 +212,7 @@ class MediaDownloader:
                         return None
                     digest.update(chunk)
                     buf.extend(chunk)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
         data = bytes(buf)
@@ -222,7 +223,7 @@ class MediaDownloader:
             url=url, data=data, content_type=content_type, sha256=digest.hexdigest()
         )
 
-    def fetch_many(self, urls: Iterable[str]) -> list[Optional[DownloadedMedia]]:
+    def fetch_many(self, urls: Iterable[str]) -> list[DownloadedMedia | None]:
         """Blocking wrapper that drives the async downloader via asyncio.run."""
 
         return asyncio.run(self.download_many_async(urls))
@@ -231,22 +232,19 @@ class MediaDownloader:
 def default_downloader() -> MediaDownloader:
     """Build a downloader honouring the SEARCH_* environment defaults."""
 
-    try:
-        max_candidates = int(os.getenv("SEARCH_MAX_CANDIDATES", "10"))
-    except ValueError:
-        max_candidates = 10
+    max_candidates = settings.search_max_candidates
     return MediaDownloader(concurrency=min(DEFAULT_CONCURRENCY, max(1, max_candidates)))
 
 
 __all__ = [
     "ALLOWED_CONTENT_TYPES",
-    "MediaDownloadError",
     "DownloadedMedia",
+    "MediaDownloadError",
     "MediaDownloader",
+    "default_downloader",
+    "normalize_content_type",
+    "resolve_content_type",
     "sha256_hex",
     "sniff_image_type",
-    "normalize_content_type",
     "validate_content_type",
-    "resolve_content_type",
-    "default_downloader",
 ]

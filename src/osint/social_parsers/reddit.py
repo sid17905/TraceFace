@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import html as _html
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from ..models import SocialPost
 
@@ -20,8 +20,7 @@ def to_json_url(url: str) -> str:
     """Return the ``.json`` API URL for a Reddit permalink."""
 
     clean = url.split("?")[0].split("#")[0]
-    if clean.endswith("/"):
-        clean = clean[:-1]
+    clean = clean.removesuffix("/")
     if clean.endswith(".json"):
         return clean
     return clean + ".json"
@@ -39,7 +38,7 @@ def _epoch_to_iso(created_utc: Any) -> str:
     )
 
 
-def _find_post(data: Any) -> Optional[dict[str, Any]]:
+def _find_post(data: Any) -> dict[str, Any] | None:
     """Locate the ``t3`` submission node in a Reddit JSON payload."""
 
     listings = data if isinstance(data, list) else [data]
@@ -71,7 +70,7 @@ def _best_media(post: dict[str, Any]) -> str:
     return direct if isinstance(direct, str) else ""
 
 
-def parse_reddit_json(data: Any, url: str) -> Optional[SocialPost]:
+def parse_reddit_json(data: Any, url: str) -> SocialPost | None:
     """Convert a Reddit ``.json`` payload into a :class:`SocialPost`."""
 
     post = _find_post(data)
@@ -101,7 +100,7 @@ def parse_reddit_json(data: Any, url: str) -> Optional[SocialPost]:
     )
 
 
-def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
+def fetch(url: str, timeout: float = 15.0) -> SocialPost | None:
     """Fetch a Reddit submission via its JSON API and parse it (best-effort)."""
 
     try:
@@ -116,9 +115,9 @@ def fetch(url: str, timeout: float = 15.0) -> Optional[SocialPost]:
         )
         resp.raise_for_status()
         data = resp.json()
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
     return parse_reddit_json(data, url)
 
 
-__all__ = ["to_json_url", "parse_reddit_json", "fetch"]
+__all__ = ["fetch", "parse_reddit_json", "to_json_url"]

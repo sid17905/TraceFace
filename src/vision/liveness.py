@@ -16,7 +16,7 @@ class FrequencyForensics:
     Analyzes the frequency spectrum of an image to detect synthetic generation artifacts.
     """
 
-    def __init__(self, high_freq_threshold: float = 0.15):
+    def __init__(self, high_freq_threshold: float = 0.85):
         """
         Initializes the FrequencyForensics analyzer.
 

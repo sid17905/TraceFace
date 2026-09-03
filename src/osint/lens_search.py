@@ -10,10 +10,11 @@ Reference: docs/MEMBER_2_PLAN.md (Day 1) and docs/COMMON_REFERENCE.md §1.2.
 
 from __future__ import annotations
 
-import os
-from typing import Any, Optional
+from typing import Any
 
-from .models import SearchCandidate, SearchEngine, SOCIAL_DOMAINS
+from src.config import settings
+
+from .models import SOCIAL_DOMAINS, SearchCandidate, SearchEngine
 from .social_parsers import detect_platform
 
 
@@ -75,8 +76,8 @@ def parse_serpapi_response(
 class LensSearchEngine:
     """Thin wrapper around SerpApi's ``google_lens`` engine."""
 
-    def __init__(self, api_key: Optional[str] = None) -> None:
-        self.api_key = api_key or os.getenv("SERPAPI_KEY", "")
+    def __init__(self, api_key: str | None = None) -> None:
+        self.api_key = api_key or settings.serpapi_key
 
     @property
     def is_configured(self) -> bool:
@@ -84,8 +85,8 @@ class LensSearchEngine:
 
     def search(
         self,
-        image_url: Optional[str] = None,
-        image_path: Optional[str] = None,
+        image_url: str | None = None,
+        image_path: str | None = None,
         max_candidates: int = 10,
     ) -> list[SearchCandidate]:
         """Run a Google Lens reverse-image query and return ranked candidates.
@@ -158,8 +159,8 @@ class BingVisualSearch:
 
     ENDPOINT = "https://api.bing.microsoft.com/v7.0/images/visualsearch"
 
-    def __init__(self, api_key: Optional[str] = None) -> None:
-        self.api_key = api_key or os.getenv("BING_VISUAL_SEARCH_KEY", "")
+    def __init__(self, api_key: str | None = None) -> None:
+        self.api_key = api_key or settings.bing_visual_search_key
 
     @property
     def is_configured(self) -> bool:
@@ -177,7 +178,7 @@ class BingVisualSearch:
 
         resp = requests.post(
             self.ENDPOINT,
-            headers={"Ocp-Apim-Subscription-Key": self.api_key},
+            headers={"Ocp-Apim-Subscription-Key": str(self.api_key) if self.api_key else ""},
             data={"imageInfo": f'{{"url":"{image_url}"}}'},
             timeout=15,
         )
@@ -186,9 +187,9 @@ class BingVisualSearch:
 
 
 __all__ = [
-    "LensSearchEngine",
     "BingVisualSearch",
-    "parse_serpapi_response",
+    "LensSearchEngine",
     "parse_bing_response",
+    "parse_serpapi_response",
     "prioritize_social",
 ]

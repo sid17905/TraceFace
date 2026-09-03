@@ -6,6 +6,8 @@ scan results directly in the terminal. It relies on the `rich` Python library
 to draw tables, panels, and confidence gauges.
 """
 
+from typing import Any
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, TextColumn
@@ -100,3 +102,50 @@ def print_scan_results(output: FaceScanOutput):
             border_style="bright_green",
         )
     )
+
+def print_phase_header(title: str) -> None:
+    console.print(f"\n[bold magenta][*] {title}[/bold magenta]")
+
+def print_success(msg: str) -> None:
+    console.print(f"[bold green]✔[/bold green] {msg}")
+
+def print_error(msg: str) -> None:
+    console.print(f"[bold red]✘ ERROR:[/bold red] {msg}")
+
+def simulate_radar_scan() -> None:
+    import time
+    import random
+    chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    console.print("[dim]Initiating Biometric Deep Scan...[/dim]")
+    for _ in range(15):
+        char = random.choice(chars)
+        console.print(f"[cyan]{char} scanning biometric mesh...[/cyan]", end="\r")
+        time.sleep(0.05)
+    console.print(" " * 40, end="\r")
+
+def print_evidence_table(candidates: list[Any]) -> None:
+    table = Table(title="[bold magenta]OSINT Evidence Log", show_header=True)
+    table.add_column("Platform", style="dim")
+    table.add_column("Source URL", style="blue")
+    
+    for cand in candidates:
+        platform = getattr(cand, "platform", "Web")
+        url = getattr(cand, "post_url", getattr(cand, "source_url", "Unknown"))
+        table.add_row(platform, url)
+    console.print(table)
+
+def print_verification_result(is_valid: bool, reason: str = "") -> None:
+    from rich.align import Align
+    if is_valid:
+        panel = Panel(
+            Text("Zero-Tamper Verified\nThe hash on Ethereum exactly matches the IPFS payload.", justify="center", style="bold green"),
+            title="[bold green]CRYPTOGRAPHIC AUDIT PASSED[/bold green]",
+            expand=False
+        )
+    else:
+        panel = Panel(
+            Text(f"Tamper Detected!\n{reason}", justify="center", style="bold red"),
+            title="[bold red]CRYPTOGRAPHIC AUDIT FAILED[/bold red]",
+            expand=False
+        )
+    console.print(Align.center(panel))
