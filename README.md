@@ -69,12 +69,12 @@ playwright install chromium
 npm install
 ```
 
-### 3. Environment Configuration
-Copy `.env.example` to `.env` and fill in your keys:
+### 3. Configuration & Settings
+We use `pydantic-settings` to manage our environment. Copy `.env.example` to `.env` and configure your keys:
 ```bash
 cp .env.example .env
 ```
-*(Required: `SERPAPI_KEY`, `PRIVATE_KEY`, and optional `PINATA_API_KEY`).*
+*(Required: `SERPAPI_KEY` or `BING_API_KEY` for OSINT, `PRIVATE_KEY` for blockchain transactions, and `PINATA_API_KEY` for IPFS pinning).*
 
 ---
 
@@ -82,24 +82,26 @@ cp .env.example .env
 
 ### Step 1: Scan a Face & Anchor to Blockchain
 ```bash
-python -m cli.main scan --image data/sample_inputs/sample_target.jpg
+python main.py scan --image data/sample_inputs/sample_target.jpg --url "https://example.com/sample_target.jpg"
 ```
 **What happens:**
-1. Detects face and extracts 512-D ArcFace vector.
-2. Queries reverse image intelligence for matching real social media posts.
-3. Automatically downloads candidate post media and verifies cosine similarity ($\ge 0.68$).
-4. Packs evidence into canonical JSON and uploads to IPFS.
-5. Sends transaction to `FaceProvenanceRegistry.sol` on Polygon Amoy / Arbitrum Sepolia.
-6. Outputs block explorer transaction link and Record Hash.
+1. Detects face and extracts 512‑D ArcFace vector.
+2. Queries reverse‑image OSINT engines (Bing, Google Lens, Playwright fallback) for matching social media posts.
+3. Downloads candidate post media and verifies biometric similarity (threshold ≥ 0.68).
+4. Stores the full Merkle tree in the IPFS payload.
+5. Sends a transaction to `FaceProvenanceRegistry.sol` on the chosen EVM network.
+6. Prints the transaction hash and IPFS CID.
 
-### Step 2: Re-Verify Discovered Data against Blockchain
+### Step 2: Verify a Provenance Record
 ```bash
-# Verify by Record Hash
-python -m cli.main verify --hash <RECORD_HASH>
+# Verify by transaction hash
+python main.py verify --hash <TX_HASH>
 
-# OR Verify directly from the source image
-python -m cli.main verify --image data/sample_inputs/sample_target.jpg
+# Optionally verify using the original image
+python main.py verify --image data/sample_inputs/sample_target.jpg
 ```
+Both commands will fetch the IPFS artifact, rebuild the Merkle tree, and compare it to the on‑chain root, displaying a clear success/failure message.
+
 **Output:**
 ```
 ================================================================================
@@ -171,5 +173,6 @@ Status: Artifact metadata has been modified after on-chain anchoring!
 ---
 
 ## ⚠️ Known Limitations
-- Social media platforms with strict authentication walls (e.g., private Instagram accounts) cannot be indexed without authenticated session cookies.
-- Testnet faucets may experience periodic rate limits; fallback local EVM node (`npx hardhat node`) is provided for offline zero-latency demonstration.
+- OSINT engines require valid API keys (e.g., `SERPAPI_KEY`, `BING_API_KEY`). Missing or invalid keys will cause engine failures (see the error message in the CLI output).
+- Private social media accounts cannot be accessed without authenticated session cookies.
+- Testnet faucets may experience rate limits; you can run a local Hardhat node (`npx hardhat node`) for offline testing.
