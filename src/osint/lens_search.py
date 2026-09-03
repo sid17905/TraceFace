@@ -77,7 +77,7 @@ class LensSearchEngine:
     """Thin wrapper around SerpApi's ``google_lens`` engine."""
 
     def __init__(self, api_key: str | None = None) -> None:
-        self.api_key = api_key or settings.serpapi_key
+        self.api_key = api_key if api_key is not None else settings.serpapi_key
 
     @property
     def is_configured(self) -> bool:
@@ -160,7 +160,7 @@ class BingVisualSearch:
     ENDPOINT = "https://api.bing.microsoft.com/v7.0/images/visualsearch"
 
     def __init__(self, api_key: str | None = None) -> None:
-        self.api_key = api_key or settings.bing_visual_search_key
+        self.api_key = api_key if api_key is not None else settings.bing_visual_search_key
 
     @property
     def is_configured(self) -> bool:
