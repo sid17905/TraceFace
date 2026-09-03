@@ -59,6 +59,17 @@ def print_scan_results(output: FaceScanOutput):
         "[red]YES[/red]" if output.quality_metrics.is_blurry else "[green]NO[/green]",
     )
 
+    is_fake = output.quality_metrics.is_deepfake
+    fake_str = (
+        "[bold red]YES (SYNTHETIC)[/bold red]"
+        if is_fake
+        else "[green]NO (HUMAN)[/green]"
+    )
+    metrics_table.add_row(
+        "Liveness Check",
+        f"{fake_str} (Score: {output.quality_metrics.deepfake_score:.2f})",
+    )
+
     # Create confidence bar
     conf_pct = output.quality_metrics.confidence_score * 100
     color = "green" if conf_pct >= 68 else "red"

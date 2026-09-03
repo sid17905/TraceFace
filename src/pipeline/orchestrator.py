@@ -13,6 +13,7 @@ import cv2
 from src.pipeline.types import BoundingBox, FaceScanOutput, QualityMetrics
 from src.vision.detector import FaceDetector
 from src.vision.embedder import FaceEmbedder
+from src.vision.liveness import FrequencyForensics
 from src.vision.quality import check_image_quality
 
 
@@ -32,6 +33,7 @@ class VisionPipeline:
         # Initialize the singletons
         self.detector = FaceDetector()
         self.embedder = FaceEmbedder()
+        self.liveness = FrequencyForensics()
 
     def process_query_image(self, image_path: str) -> FaceScanOutput | None:
         """
@@ -43,6 +45,11 @@ class VisionPipeline:
             raise ValueError(f"Could not load image at {image_path}")
 
         is_blurry, blur_score = check_image_quality(img)
+        is_deepfake, df_score = self.liveness.analyze_liveness(img)
+
+        # Abort heavily if the query image itself is a fake
+        if is_deepfake:
+            raise ValueError(f"ERR_SYNTHETIC_DEEPFAKE_DETECTED: Score {df_score:.3f}")
 
         try:
             det_result = self.detector.detect_face(img)
@@ -65,6 +72,8 @@ class VisionPipeline:
                 laplacian_blur_score=blur_score,
                 is_blurry=is_blurry,
                 confidence_score=confidence,
+                is_deepfake=is_deepfake,
+                deepfake_score=df_score,
             ),
             bounding_box=BoundingBox(
                 x_min=bbox[0],

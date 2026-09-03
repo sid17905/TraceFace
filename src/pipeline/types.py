@@ -14,6 +14,8 @@ class QualityMetrics(BaseModel):
     laplacian_blur_score: float
     is_blurry: bool
     confidence_score: float
+    is_deepfake: bool
+    deepfake_score: float
 
 
 class BoundingBox(BaseModel):
