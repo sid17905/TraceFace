@@ -108,50 +108,86 @@ class OSINTDispatcher:
         self.bing = bing if bing is not None else BingVisualSearch()
         self.playwright = playwright if playwright is not None else PlaywrightScraper()
         self.downloader = downloader if downloader is not None else MediaDownloader()
-        if threshold is not None:
-            self.threshold = threshold
-        else:
-            self.threshold = settings.face_similarity_threshold
+        self.threshold = self._resolve_threshold(threshold)
 
-    # -- stage 1: discovery ------------------------------------------------
+    @staticmethod
+    def _resolve_threshold(explicit: float | None) -> float:
+        """Pick the effective similarity gate.
+
+        Precedence: an explicit constructor value, then the configured
+        ``face_similarity_threshold``, then ``DEFAULT_THRESHOLD``. A value
+        outside the valid cosine range ``[0, 1]`` (e.g. the ``-1.0`` sentinel
+        that means "unset" in config) is treated as unconfigured and falls back
+        to ``DEFAULT_THRESHOLD`` — otherwise the gate would admit every
+        candidate (``cosine >= -1`` is always true).
+        """
+
+        for value in (explicit, settings.face_similarity_threshold):
+            if value is not None and 0.0 <= value <= 1.0:
+                return float(value)
+        return DEFAULT_THRESHOLD
 
     def discover(self, query: OSINTQuery) -> tuple[list[SearchCandidate], str]:
-        """Run the cascading search strategy; return (candidates, engine_label)."""
-
-        # Primary: Google Lens via SerpApi.
+        """Run multi-source search aggregation; return (deduplicated candidates, engines_used)."""
+        
+        all_candidates: list[SearchCandidate] = []
+        engines_used: list[str] = []
+        seen_urls: set[str] = set()
+        
+        def add_unique(candidates: list[SearchCandidate]) -> int:
+            added = 0
+            for cand in candidates:
+                key = cand.source_url
+                if key not in seen_urls:
+                    seen_urls.add(key)
+                    all_candidates.append(cand)
+                    added += 1
+            return added
+        
         if query.image_url and self.lens.is_configured:
             try:
                 found = self.lens.search(
                     image_url=query.image_url, max_candidates=query.max_candidates
                 )
                 if found:
-                    return found, SearchEngine.GOOGLE_LENS_SERPAPI
-            except Exception as exc:  # engine failure must not abort the cascade  # noqa: BLE001
+                    added = add_unique(found)
+                    if added > 0:
+                        engines_used.append(SearchEngine.GOOGLE_LENS_SERPAPI)
+                    logger.info("Google Lens via SerpApi: %d unique candidates", added)
+            except Exception as exc:
                 logger.warning("Lens search failed: %s", exc)
-
-        # Secondary: Bing Visual Search.
+        
         if query.image_url and self.bing.is_configured:
             try:
                 found = self.bing.search(
                     query.image_url, max_candidates=query.max_candidates
                 )
                 if found:
-                    return found, SearchEngine.BING_VISUAL_SEARCH
-            except Exception as exc:  # noqa: BLE001
+                    added = add_unique(found)
+                    if added > 0:
+                        engines_used.append(SearchEngine.BING_VISUAL_SEARCH)
+                    logger.info("Bing Visual Search: %d unique candidates", added)
+            except Exception as exc:
                 logger.warning("Bing search failed: %s", exc)
-
-        # Autonomous fallback: Playwright headless browser on a local image.
+        
         if query.image_path:
             try:
                 found = self.playwright.reverse_image_search(
                     query.image_path, max_candidates=query.max_candidates
                 )
                 if found:
-                    return found, SearchEngine.PLAYWRIGHT_FALLBACK
-            except Exception as exc:  # noqa: BLE001
+                    added = add_unique(found)
+                    if added > 0:
+                        engines_used.append(SearchEngine.PLAYWRIGHT_FALLBACK)
+                    logger.info("Playwright crawler: %d unique candidates", added)
+            except Exception as exc:
                 logger.warning("Playwright fallback failed: %s", exc)
-
-        return [], SearchEngine.NONE
+        
+        engines_label = " & ".join(engines_used) if engines_used else SearchEngine.NONE
+        logger.info("Multi-source OSINT complete: %d total candidates from %s", 
+                    len(all_candidates), engines_label)
+        
+        return all_candidates[:query.max_candidates], engines_label
 
     # -- stage 2: candidate resolution + verification ----------------------
 
@@ -177,7 +213,7 @@ class OSINTDispatcher:
     def verify_candidates(
         self, candidates: list[SearchCandidate], query: OSINTQuery
     ) -> tuple[VerifiedMatch | None, list[SearchEvidence]]:
-        """Download + biometrically score candidates; stop at first authentic hit."""
+        """Download + biometrically score all candidates; return best authentic match."""
 
         evidence = [c.to_evidence() for c in candidates]
         threshold = (
@@ -186,10 +222,12 @@ class OSINTDispatcher:
             else self.threshold
         )
 
-        # Discovery-only mode: no matcher or no query vector to compare against.
         if self.matcher_fn is None or not query.query_embedding:
             logger.info("Discovery-only mode: skipping biometric verification.")
             return None, evidence
+
+        best_match: VerifiedMatch | None = None
+        best_score: float = 0.0
 
         for candidate in candidates:
             post = self._resolve_post(candidate)
@@ -202,25 +240,30 @@ class OSINTDispatcher:
                 continue
             try:
                 score = float(self.matcher_fn(query.query_embedding, media.data))
-            except Exception as exc:  # noqa: BLE001
+                logger.info("Candidate %s scored cosine=%.4f", post.post_url, score)
+                if score >= threshold and score > best_score:
+                    verification = BiometricVerification(
+                        cosine_similarity=score,
+                        is_authentic_match=True,
+                        threshold_enforced=threshold,
+                    )
+                    match = VerifiedMatch.from_post(
+                        post,
+                        target_media_url=media.url,
+                        target_media_sha256=media.sha256,
+                        verification=verification,
+                    )
+                    best_match = match
+                    best_score = score
+            except Exception as exc:
                 logger.debug("Matcher error on %s: %s", media_url, exc)
                 continue
-            logger.info("Candidate %s scored cosine=%.4f", post.post_url, score)
-            if score >= threshold:
-                verification = BiometricVerification(
-                    cosine_similarity=score,
-                    is_authentic_match=True,
-                    threshold_enforced=threshold,
-                )
-                match = VerifiedMatch.from_post(
-                    post,
-                    target_media_url=media.url,
-                    target_media_sha256=media.sha256,
-                    verification=verification,
-                )
-                return match, evidence
 
-        return None, evidence
+        if best_match:
+            logger.info("Best verified match: %s (cosine=%.4f)", 
+                       best_match.post_url, best_match.biometric_verification.cosine_similarity)
+        
+        return best_match, evidence
 
     # -- top-level entry ---------------------------------------------------
 

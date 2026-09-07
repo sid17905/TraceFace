@@ -10,6 +10,13 @@ from src.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Anvil/Hardhat default account #0. This is a PUBLIC, well-known test key that
+# ships with every local EVM dev node — it holds no mainnet value and must never
+# be funded or reused in production. Kept as a dev-only signing fallback.
+ANVIL_DEV_PRIVATE_KEY = (
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+)
+
 
 class BlockchainClient:
     contract: Any = None
@@ -23,8 +30,11 @@ class BlockchainClient:
     ):
         self.rpc_url = rpc_url or settings.rpc_url
         self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
-        
-        self.private_key = private_key or settings.private_key or "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+        # Well-known Anvil/Hardhat account #0 — a PUBLIC test key with no real
+        # value. Used only as a last-resort fallback so the client can sign in a
+        # local dev chain when nothing is configured. Never fund this address.
+        self.private_key = private_key or settings.private_key or ANVIL_DEV_PRIVATE_KEY
         self.account = Account.from_key(self.private_key)
 
         abi, detected_address = self._load_contract_metadata(abi_path)

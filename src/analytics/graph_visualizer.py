@@ -120,3 +120,123 @@ def render_mermaid_graph(graph: PropagationGraph) -> str:
         lines.append(f"    {src_clean} -->|{edge_label}| {dst_clean}")
 
     return "\n".join(lines)
+
+
+def to_d3_format(graph: PropagationGraph) -> dict[str, Any]:
+    """Convert propagation graph to D3.js force layout format."""
+    from typing import Any
+    
+    nodes = []
+    for node in graph.nodes:
+        nodes.append({
+            "id": node.node_id,
+            "platform": node.platform,
+            "post_url": node.post_url,
+            "author": node.author_handle,
+            "timestamp": node.timestamp_utc,
+            "phash": node.phash,
+            "similarity": node.similarity_score,
+            "laplacian": node.laplacian_score,
+            "is_root": node.is_root_zero,
+            "label": f"{node.platform}\n{node.author_handle}",
+        })
+    
+    links = []
+    for edge in graph.edges:
+        links.append({
+            "source": edge.source_id,
+            "target": edge.target_id,
+            "delta_seconds": edge.delta_seconds,
+            "hamming": edge.phash_hamming_distance,
+            "degradation": edge.degradation_score,
+        })
+    
+    return {
+        "nodes": nodes,
+        "links": links,
+        "root_zero_id": graph.root_zero_node_id,
+        "total_hops": graph.total_hops,
+    }
+
+
+def to_cytoscape_format(graph: PropagationGraph) -> dict[str, Any]:
+    """Convert propagation graph to Cytoscape.js format."""
+    from typing import Any
+    
+    elements = []
+    
+    for node in graph.nodes:
+        elements.append({
+            "data": {
+                "id": node.node_id,
+                "platform": node.platform,
+                "author": node.author_handle,
+                "url": node.post_url,
+                "similarity": node.similarity_score,
+                "is_root": node.is_root_zero,
+            }
+        })
+    
+    for edge in graph.edges:
+        elements.append({
+            "data": {
+                "id": f"{edge.source_id}-{edge.target_id}",
+                "source": edge.source_id,
+                "target": edge.target_id,
+                "delta": edge.delta_seconds,
+                "hamming": edge.phash_hamming_distance,
+            }
+        })
+    
+    return {"elements": elements}
+
+
+def to_vis_network_format(graph: PropagationGraph) -> dict[str, Any]:
+    """Convert propagation graph to Vis.js Network format."""
+    from typing import Any
+    
+    platform_colors = {
+        "twitter": "#1DA1F2",
+        "reddit": "#FF4500",
+        "instagram": "#E4405F",
+        "linkedin": "#0A66C2",
+        "youtube": "#FF0000",
+        "tiktok": "#000000",
+        "facebook": "#1877F2",
+    }
+    
+    nodes = []
+    for node in graph.nodes:
+        color = platform_colors.get(node.platform.lower(), "#808080")
+        nodes.append({
+            "id": node.node_id,
+            "label": f"{node.platform}\n@{node.author_handle}",
+            "color": color,
+            "size": 25 if node.is_root_zero else 20,
+            "font": {"size": 14, "color": "#ffffff"},
+            "title": f"URL: {node.post_url}\nSimilarity: {node.similarity_score:.3f}",
+        })
+    
+    edges = []
+    for edge in graph.edges:
+        edges.append({
+            "from": edge.source_id,
+            "to": edge.target_id,
+            "label": f"{edge.delta_seconds:.0f}s",
+            "arrows": "to",
+            "color": {"color": "#888888"},
+        })
+    
+    return {
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
+__all__ = [
+    "render_ascii_timeline",
+    "render_mermaid_graph",
+    "to_d3_format",
+    "to_cytoscape_format",
+    "to_vis_network_format",
+]

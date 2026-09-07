@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TraceFace Platform Registry Configuration",
+  "description": "Configurable social media platform parsers for OSINT engine",
+  "version": "1.0.0",
+  
+  "platforms": [
+    {
+      "key": "twitter",
+      "name": "Twitter/X",
+      "hosts": ["twitter.com", "x.com", "t.co"],
+      "color": "#1DA1F2",
+      "icon": "twitter",
+      "enabled": true,
+      "priority": 1,
+      "notes": "Uses syndication API for public tweets"
+    },
+    {
+      "key": "reddit",
+      "name": "Reddit",
+      "hosts": ["reddit.com", "redd.it", "old.reddit.com"],
+      "color": "#FF4500",
+      "icon": "reddit",
+      "enabled": true,
+      "priority": 2
+    },
+    {
+      "key": "instagram",
+      "name": "Instagram",
+      "hosts": ["instagram.com", "instagr.am"],
+      "color": "#E4405F",
+      "icon": "instagram",
+      "enabled": true,
+      "priority": 3,
+      "notes": "Limited to public profiles without authentication"
+    },
+    {
+      "key": "linkedin",
+      "name": "LinkedIn",
+      "hosts": ["linkedin.com", "lnkd.in"],
+      "color": "#0A66C2",
+      "icon": "linkedin",
+      "enabled": true,
+      "priority": 4,
+      "notes": "Uses generic web scraper for public posts"
+    },
+    {
+      "key": "tiktok",
+      "name": "TikTok",
+      "hosts": ["tiktok.com", "vm.tiktok.com"],
+      "color": "#000000",
+      "icon": "tiktok",
+      "enabled": true,
+      "priority": 5,
+      "notes": "Web scraper for public posts"
+    },
+    {
+      "key": "youtube",
+      "name": "YouTube",
+      "hosts": ["youtube.com", "youtu.be", "youtube-nocookie.com"],
+      "color": "#FF0000",
+      "icon": "youtube",
+      "enabled": true,
+      "priority": 6,
+      "notes": "Uses oEmbed API for video thumbnails"
+    },
+    {
+      "key": "facebook",
+      "name": "Facebook",
+      "hosts": ["facebook.com", "fb.com", "fb.watch"],
+      "color": "#1877F2",
+      "icon": "facebook",
+      "enabled": true,
+      "priority": 7,
+      "notes": "Public pages only via OpenGraph"
+    }
+  ],
+  
+  "custom_platforms": [],
+  
+  "settings": {
+    "default_timeout_seconds": 15.0,
+    "max_retries": 3,
+    "retry_delay_seconds": 1.0,
+    "user_agent_rotation": true,
+    "respect_robots_txt": true,
+    "cache_parsed_posts": true,
+    "cache_ttl_seconds": 3600
+  },
+  
+  "fallback": {
+    "platform": "generic",
+    "parser": "generic_web",
+    "enabled": true,
+    "notes": "Generic OpenGraph/metadata scraper for unknown platforms"
+  }
+}

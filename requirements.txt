@@ -24,6 +24,13 @@ eth-account>=0.11.0       # EIP-712 typed message signing and private key operat
 pycryptodome>=3.20.0      # Keccak-256 and SHA-256 cryptographic hashing primitives
 canonicaljson>=2.0.0      # RFC 8785 canonical JSON serialization
 
+# --- REST/Streaming API Layer (FastAPI) ---
+fastapi>=0.110.0          # Async REST + OpenAPI backend exposing the src/ pipeline
+uvicorn[standard]>=0.29.0 # ASGI server (websockets, httptools, uvloop where available)
+python-multipart>=0.0.9   # multipart/form-data parsing for image file uploads
+sse-starlette>=2.0.0      # Server-Sent Events streaming for live scan stage updates
+networkx>=3.2             # Directed-acyclic-graph construction for temporal origin DAG
+
 # --- CLI & Terminal User Experience (Joint) ---
 typer[all]>=0.9.0         # Modern CLI building framework with Click foundation
 rich>=13.7.0              # High-grade terminal UI (tables, progress bars, live status, color)
@@ -36,3 +43,6 @@ pytest>=8.0.0             # Unit & integration testing framework
 pytest-asyncio>=0.23.0    # Async test runner for Playwright and async HTTP
 black>=24.2.0             # Python code formatter
 ruff>=0.2.2               # Blazing fast Python linter
+
+# --- Monitoring & Observability ---
+prometheus-client>=0.19.0 # Prometheus metrics collection and exposition

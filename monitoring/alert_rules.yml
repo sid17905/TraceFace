@@ -1,0 +1,210 @@
+# Prometheus Alerting Rules for TraceFace
+
+groups:
+  - name: traceface-api-alerts
+    interval: 30s
+    rules:
+      # API Health Alerts
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High API error rate detected"
+          description: "API is returning 5xx errors at {{ $value | printf \"%.2f\" }} errors/sec"
+
+      - alert: APISlowResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API response time degraded"
+          description: "p95 response time is {{ $value | printf \"%.2f\" }}s"
+
+      - alert: APIDown
+        expr: up{job="traceface-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TraceFace API is down"
+          description: "API has been unreachable for 1 minute"
+
+  - name: traceface-osint-alerts
+    interval: 1m
+    rules:
+      # OSINT Engine Alerts
+      - alert: OSINTAllEnginesFailed
+        expr: sum(rate(osint_requests_total[5m])) > 0 and sum(rate(osint_success_total[5m])) == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "All OSINT engines failing"
+          description: "No OSINT engine is returning successful results"
+
+      - alert: OSINTLowSuccessRate
+        expr: rate(osint_success_total[10m]) / rate(osint_requests_total[10m]) < 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OSINT success rate below 50%"
+          description: "Current success rate is {{ $value | humanizePercentage }}"
+
+      - alert: OSINTAPIQuotaExhausted
+        expr: osint_api_quota_remaining < 100
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OSINT API quota low"
+          description: "Only {{ $value }} API calls remaining for SerpApi"
+
+  - name: traceface-blockchain-alerts
+    interval: 1m
+    rules:
+      # Blockchain Alerts
+      - alert: BlockchainDisconnected
+        expr: blockchain_client_connected == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Blockchain client disconnected"
+          description: "Cannot reach RPC endpoint"
+
+      - alert: BlockchainTransactionFailures
+        expr: rate(blockchain_transactions_total{status="failed"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High blockchain transaction failure rate"
+          description: "{{ $value | printf \"%.2f\" }} transactions failing per second"
+
+      - alert: BlockchainHighGasPrice
+        expr: blockchain_gas_price_gwei > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Gas price very high"
+          description: "Current gas price is {{ $value }} Gwei"
+
+      - alert: LowETHBalance
+        expr: blockchain_eth_balance < 0.1
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Deployer account low on ETH"
+          description: "Only {{ $value }} ETH remaining for gas"
+
+  - name: traceface-vision-alerts
+    interval: 30s
+    rules:
+      # Vision Pipeline Alerts
+      - alert: VisionHighRejectionRate
+        expr: rate(vision_face_detections_total{status="rejected"}[10m]) / rate(vision_face_detections_total[10m]) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High face detection rejection rate"
+          description: "{{ $value | humanizePercentage }} of faces being rejected"
+
+      - alert: LowMatchRate
+        expr: rate(biometric_matches_total[1h]) / rate(biometric_verifications_total[1h]) < 0.2
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Biometric match rate below 20%"
+          description: "Only {{ $value | humanizePercentage }} of verifications are matching"
+
+  - name: traceface-system-alerts
+    interval: 1m
+    rules:
+      # System Resource Alerts
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining"
+
+      - alert: DatabaseGrowingRapidly
+        expr: rate(graph_db_size_bytes[1h]) > 10485760  # 10 MB/hour
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Graph database growing rapidly"
+          description: "Database is growing at {{ $value | humanize1024 }}B/s"
+
+  - name: traceface-ipfs-alerts
+    interval: 2m
+    rules:
+      # IPFS Alerts
+      - alert: IPFSPinningFailures
+        expr: rate(ipfs_pins_total{status="failed"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "IPFS pinning failures"
+          description: "{{ $value | printf \"%.2f\" }} pins failing per second"
+
+      - alert: PinataQuotaExhausted
+        expr: ipfs_pinata_quota_remaining < 100
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pinata API quota low"
+          description: "Only {{ $value }} pins remaining on quota"
+
+  - name: traceface-business-alerts
+    interval: 5m
+    rules:
+      # Business Logic Alerts
+      - alert: NoScansInLastHour
+        expr: increase(scans_total[1h]) == 0
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: "No scans in last hour"
+          description: "TraceFace has processed 0 scans in the last hour"
+
+      - alert: ScanBacklogGrowing
+        expr: queued_scans_total > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scan backlog growing"
+          description: "{{ $value }} scans queued for processing"

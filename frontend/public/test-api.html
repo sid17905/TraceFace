@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Graph API</title>
+</head>
+<body>
+    <h1>Graph API Test</h1>
+    <button onclick="loadGraphs()">Load Graphs</button>
+    <div id="result"></div>
+    
+    <script>
+        async function loadGraphs() {
+            const div = document.getElementById('result');
+            div.innerHTML = 'Loading...';
+            
+            try {
+                const response = await fetch('/api/v1/graph/jobs');
+                const data = await response.json();
+                
+                div.innerHTML = `
+                    <h2>Found ${data.total} graphs</h2>
+                    <pre>${JSON.stringify(data.jobs.slice(0, 5), null, 2)}</pre>
+                `;
+            } catch (error) {
+                div.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

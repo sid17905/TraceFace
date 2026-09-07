@@ -1,0 +1,185 @@
+{
+  "dashboard": {
+    "title": "TraceFace Provenance Pipeline",
+    "uid": "traceface-main",
+    "editable": true,
+    "timezone": "browser",
+    "refresh": "10s",
+    "panels": [
+      {
+        "title": "API Request Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "reqps", "label": "Requests/sec"}
+        ]
+      },
+      {
+        "title": "API Response Time (p95)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Seconds"}
+        ]
+      },
+      {
+        "title": "OSINT Engine Success Rate",
+        "type": "gauge",
+        "gridPos": {"x": 0, "y": 8, "w": 6, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(osint_success_total[1h]) / rate(osint_requests_total[1h]) * 100",
+            "legendFormat": "{{engine}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdMarkers": true,
+          "thresholds": [
+            {"value": 80, "color": "yellow"},
+            {"value": 90, "color": "green"}
+          ]
+        }
+      },
+      {
+        "title": "Biometric Verification Throughput",
+        "type": "graph",
+        "gridPos": {"x": 6, "y": 8, "w": 6, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(biometric_verifications_total[5m])",
+            "legendFormat": "verifications",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "Match Success Rate",
+        "type": "pie",
+        "gridPos": {"x": 12, "y": 8, "w": 6, "h": 6},
+        "targets": [
+          {
+            "expr": "sum(biometric_matches_total)",
+            "legendFormat": "Matches",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(biometric_rejections_total)",
+            "legendFormat": "Rejections",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "title": "Blockchain Transactions",
+        "type": "graph",
+        "gridPos": {"x": 18, "y": 8, "w": 6, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(blockchain_transactions_total[5m])",
+            "legendFormat": "{{status}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "IPFS Pinning Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 14, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(ipfs_pins_total[1h])",
+            "legendFormat": "{{status}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "Graph Storage Size",
+        "type": "stat",
+        "gridPos": {"x": 8, "y": 14, "w": 4, "h": 6},
+        "targets": [
+          {
+            "expr": "graph_db_size_bytes / 1024 / 1024",
+            "legendFormat": "MB",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "Active Scans",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 14, "w": 4, "h": 6},
+        "targets": [
+          {
+            "expr": "active_scans_total",
+            "legendFormat": "Scans",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {"x": 16, "y": 14, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(errors_total[5m])",
+            "legendFormat": "{{type}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "Platform Distribution",
+        "type": "pie",
+        "gridPos": {"x": 0, "y": 20, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "sum by (platform) (osint_candidates_total)",
+            "legendFormat": "{{platform}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 20, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes / 1024 / 1024",
+            "legendFormat": "MB",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {"x": 16, "y": 20, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total[5m]) * 100",
+            "legendFormat": "%",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  }
+}

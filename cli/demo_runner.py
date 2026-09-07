@@ -91,9 +91,18 @@ def run_demo(image_path: str | None = None) -> None:
     ui.print_success("Face Mesh & 512-D L2-Normalized ArcFace Embedding Extracted!")
 
     ui.print_phase_header("PHASE 2: Temporal Origin & Propagation DAG (Root-Zero Analysis)")
+    
+    # Create or load existing nodes from storage
+    from src.storage.provenance_store import get_provenance_store
+    import uuid
+    
+    store = get_provenance_store()
+    job_id = f"demo_{uuid.uuid4().hex[:12]}"
+    run_suffix = uuid.uuid4().hex[:8]  # Unique suffix for this run
+    
     nodes = [
         OriginNode(
-            node_id="origin_root",
+            node_id=f"origin_root_{run_suffix}",
             platform="Twitter/X",
             post_url="https://x.com/original_creator/status/1780000000000000001",
             author_handle="@original_creator",
@@ -103,7 +112,7 @@ def run_demo(image_path: str | None = None) -> None:
             laplacian_score=vision_result.quality_metrics.laplacian_blur_score,
         ),
         OriginNode(
-            node_id="hop_reddit",
+            node_id=f"hop_reddit_{run_suffix}",
             platform="Reddit",
             post_url="https://reddit.com/r/technology/comments/xyz123",
             author_handle="/r/technology",
@@ -113,7 +122,7 @@ def run_demo(image_path: str | None = None) -> None:
             laplacian_score=vision_result.quality_metrics.laplacian_blur_score * 0.85,
         ),
         OriginNode(
-            node_id="hop_insta",
+            node_id=f"hop_insta_{run_suffix}",
             platform="Instagram",
             post_url="https://instagram.com/p/C58abcxyz/",
             author_handle="@repost_hub",
@@ -125,8 +134,15 @@ def run_demo(image_path: str | None = None) -> None:
     ]
 
     graph = build_propagation_graph(nodes)
+    
+    # Save nodes to persistent storage
+    store.create_job(job_id, vision_result.scan_id, status="running")
+    store.save_graph(graph, job_id)
+    store.update_job_status(job_id, "completed")
+    
     ui.print_propagation_dag(graph)
     console.print(f"[bold green][OK] Root-Zero Identified:[/bold green] [cyan]{graph.root_zero_node_id}[/cyan] (Earliest timestamp + Max Laplacian sharpness)")
+    console.print(f"[bold blue][💾][/bold blue] Saved {len(nodes)} nodes to database (job: {job_id})")
 
     ui.print_phase_header("PHASE 3: Web3 Provenance Anchoring & EIP-712 Dispute Takedown")
     ipfs = IPFSClient()

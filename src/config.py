@@ -4,6 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class TraceFaceSettings(BaseSettings):
     # Member 1: AI / CV Configuration
     face_detection_confidence: float = 0.85
+    # -1.0 is an "unset" sentinel: the OSINT dispatcher treats any value outside
+    # the valid cosine range [0, 1] as unconfigured and falls back to its
+    # DEFAULT_THRESHOLD (0.68). Set FACE_SIMILARITY_THRESHOLD in .env to override.
     face_similarity_threshold: float = -1.0
     embedding_model_backbone: str = "buffalo_l"
     device: str = "cpu"

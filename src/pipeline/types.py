@@ -16,6 +16,9 @@ class QualityMetrics(BaseModel):
     confidence_score: float
     is_deepfake: bool
     deepfake_score: float
+    # Advisory message when the frequency-forensics heuristic flags the image as
+    # possibly synthetic. Non-blocking: the scan still completes.
+    deepfake_warning: str | None = None
 
 
 class BoundingBox(BaseModel):

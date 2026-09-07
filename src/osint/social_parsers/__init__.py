@@ -4,61 +4,37 @@ Exposes :func:`detect_platform` (URL → internal platform key) and
 :func:`parse_post` (URL → :class:`~src.osint.models.SocialPost`), routing each
 URL to the correct platform parser. Individual pure ``parse_*`` functions live
 in the per-platform modules and are used directly by the unit tests.
+
+Uses the dynamic PlatformRegistry for extensible platform support.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Optional  # noqa: F401
-
 from ..models import SocialPost
-from . import generic_web, instagram, reddit, twitter
-
-# Substring → internal platform key. Order matters (check specific hosts first).
-_PLATFORM_HOSTS: tuple[tuple[tuple[str, ...], str], ...] = (
-    (("twitter.com", "x.com"), "twitter"),
-    (("reddit.com", "redd.it"), "reddit"),
-    (("instagram.com",), "instagram"),
-    (("linkedin.com",), "linkedin"),
-)
-
+from .platform_registry import get_platform_registry, PlatformRegistry
 
 def detect_platform(url: str) -> str:
     """Classify a URL into one of the known platform keys, else ``"generic"``."""
-
-    low = (url or "").lower()
-    for hosts, key in _PLATFORM_HOSTS:
-        if any(host in low for host in hosts):
-            return key
-    return "generic"
-
-
-# platform key → fetch(url, timeout) -> Optional[SocialPost]
-_FETCHERS: dict[str, Callable[..., SocialPost | None]] = {
-    "twitter": twitter.fetch,
-    "reddit": reddit.fetch,
-    "instagram": instagram.fetch,
-    "linkedin": generic_web.fetch,
-    "generic": generic_web.fetch,
-}
-
-
-def get_fetcher(platform: str) -> Callable[..., SocialPost | None]:
-    return _FETCHERS.get(platform, generic_web.fetch)
+    registry = get_platform_registry()
+    return registry.detect_platform(url)
 
 
 def parse_post(url: str, timeout: float = 15.0) -> SocialPost | None:
     """Fetch and parse a post from any supported platform (best-effort)."""
+    registry = get_platform_registry()
+    return registry.parse_post(url, timeout=timeout)
 
-    return get_fetcher(detect_platform(url))(url, timeout=timeout)
+
+def get_fetcher(platform: str):
+    """Get the fetcher function for a platform."""
+    registry = get_platform_registry()
+    return registry.get_fetcher(platform)
 
 
 __all__ = [
     "detect_platform",
-    "generic_web",
-    "get_fetcher",
-    "instagram",
     "parse_post",
-    "reddit",
-    "twitter",
+    "get_platform_registry",
+    "get_fetcher",
+    "PlatformRegistry",
 ]

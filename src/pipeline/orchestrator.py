@@ -47,9 +47,16 @@ class VisionPipeline:
         is_blurry, blur_score = check_image_quality(img)
         is_deepfake, df_score = self.liveness.analyze_liveness(img)
 
-        # Abort heavily if the query image itself is a fake
+        # Frequency-domain liveness is a heuristic advisory, not a trained
+        # classifier, so a positive flag is surfaced as a warning rather than
+        # aborting the scan. Callers that need a hard gate (e.g. a strict
+        # ingestion mode) can inspect quality_metrics.is_deepfake themselves.
+        deepfake_warning = None
         if is_deepfake:
-            raise ValueError(f"ERR_SYNTHETIC_DEEPFAKE_DETECTED: Score {df_score:.3f}")
+            deepfake_warning = (
+                f"Frequency-forensics flagged possible synthetic artifacts "
+                f"(anomaly score {df_score:.3f}). Treat provenance as unverified."
+            )
 
         try:
             det_result = self.detector.detect_face(img)
@@ -74,6 +81,7 @@ class VisionPipeline:
                 confidence_score=confidence,
                 is_deepfake=is_deepfake,
                 deepfake_score=df_score,
+                deepfake_warning=deepfake_warning,
             ),
             bounding_box=BoundingBox(
                 x_min=bbox[0],
